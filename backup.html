@@ -1,0 +1,2511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mundial 2026 — Draft</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a40;
+    --accent: #e8c840;
+    --accent2: #4080ff;
+    --red: #ff4444;
+    --green: #44cc88;
+    --text: #e8e8f0;
+    --muted: #6060a0;
+    --radius: 4px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCREEN SYSTEM ── */
+  .screen { display:none; min-height:100vh; }
+  .screen.active { display:flex; flex-direction:column; }
+
+  /* ── LOGIN SCREEN ── */
+  #screen-login {
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(ellipse 60% 40% at 30% 20%, #1a1a3a 0%, transparent 70%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, #0a1a10 0%, transparent 60%),
+      var(--bg);
+  }
+
+  .login-box {
+    width: min(420px, 92vw);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 40px;
+    position: relative;
+  }
+
+  .login-box::before {
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+  }
+
+  .login-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 4px;
+    line-height:1;
+    margin-bottom: 4px;
+  }
+
+  .login-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .login-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display:block;
+  }
+
+  .user-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .user-btn {
+    padding: 12px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align:left;
+    position:relative;
+    overflow:hidden;
+  }
+
+  .user-btn:hover {
+    border-color: var(--accent2);
+    background: #1a1a36;
+  }
+
+  .user-btn.selected {
+    border-color: var(--accent);
+    background: #1e1a00;
+    color: var(--accent);
+    font-weight:600;
+  }
+
+  .user-btn.selected::after {
+    content:'✓';
+    position:absolute;
+    right:10px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--accent);
+  }
+
+  .btn-primary {
+    width:100%;
+    padding: 14px;
+    background: var(--accent);
+    border: none;
+    color: #000;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary:hover { background: #f5d840; transform:translateY(-1px); }
+  .btn-primary:disabled { background: #444; color: #888; cursor:not-allowed; transform:none; }
+
+  /* ── MAIN SCREEN ── */
+  #screen-main {
+    background: var(--bg);
+  }
+
+  .topbar {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position:sticky;
+    top:0;
+    z-index:100;
+  }
+
+  .topbar-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 4px;
+    color: var(--accent);
+  }
+
+  .topbar-user {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .topbar-user span { color: var(--text); font-weight:600; }
+
+  .nav-tabs {
+    display:flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .nav-tab {
+    padding: 16px 32px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-content { display:none; flex:1; }
+  .tab-content.active { display:flex; flex-direction:column; }
+
+  /* ── PLANTILLA TAB ── */
+  #tab-plantilla {
+    padding: 28px;
+    overflow-y:auto;
+  }
+
+  .plantilla-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 24px;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+
+  .plantilla-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 4px;
+  }
+
+  .plantilla-count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+  }
+
+  .user-selector-row {
+    display:flex;
+    gap:8px;
+    margin-bottom: 24px;
+    flex-wrap:wrap;
+  }
+
+  .user-pill {
+    padding: 7px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .user-pill:hover { border-color: var(--accent2); color:var(--text); }
+  .user-pill.active { border-color:var(--accent); color:var(--accent); background:#1e1a00; }
+
+  .plantilla-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+  }
+
+  .player-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    position:relative;
+  }
+
+  .player-card-pos {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform:uppercase;
+    margin-bottom: 4px;
+  }
+
+  .player-card-pos.PO { color: #ff9944; }
+  .player-card-pos.DF { color: #4499ff; }
+  .player-card-pos.MC { color: #44cc88; }
+  .player-card-pos.DC { color: #cc44ff; }
+
+  .player-card-name {
+    font-weight:600;
+    font-size: 0.85rem;
+    line-height:1.3;
+    margin-bottom: 4px;
+  }
+
+  .player-card-country {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  .empty-slot {
+    background: transparent;
+    border: 1px dashed var(--border);
+    padding: 12px 14px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing:1px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height: 70px;
+  }
+
+  /* ── DRAFT TAB ── */
+  #tab-draft {
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    height: calc(100vh - 113px);
+  }
+
+  .draft-status-bar {
+    padding: 14px 28px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display:flex;
+    align-items:center;
+    gap:20px;
+    flex-wrap:wrap;
+  }
+
+  .draft-status-item {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .draft-status-item span { color:var(--text); font-weight:600; }
+  .draft-status-item.highlight span { color:var(--accent); }
+
+  .draft-turn-indicator {
+    margin-left:auto;
+    padding: 8px 20px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 3px;
+    border: 1px solid;
+  }
+
+  .draft-turn-indicator.my-turn {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: #1e1a00;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .draft-turn-indicator.other-turn {
+    color: var(--muted);
+    border-color: var(--border);
+  }
+
+  .draft-turn-indicator.done {
+    color: var(--green);
+    border-color: var(--green);
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; }
+    50% { opacity:0.6; }
+  }
+
+  .draft-body {
+    display:flex;
+    flex:1;
+    overflow:hidden;
+  }
+
+  /* Left: player list */
+  .draft-player-panel {
+    width: 360px;
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    border-right: 1px solid var(--border);
+    overflow:hidden;
+  }
+
+  .draft-search-bar {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .draft-search-input {
+    flex:1;
+    min-width:120px;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    outline:none;
+  }
+
+  .draft-search-input:focus { border-color: var(--accent2); }
+
+  .filter-pos-btn {
+    padding: 6px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing:1px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor:pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-pos-btn.active { color:var(--text); border-color:var(--accent2); }
+
+  .draft-player-list {
+    overflow-y:auto;
+    flex:1;
+  }
+
+  .country-section { border-bottom: 1px solid var(--border); }
+
+  .country-header {
+    padding: 10px 16px;
+    background: var(--surface2);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    user-select:none;
+  }
+
+  .country-header:hover { color:var(--text); }
+  .country-header.has-drafted { color: var(--muted); opacity:0.5; }
+  .country-header .chevron { transition: transform 0.2s; }
+  .country-header.collapsed .chevron { transform: rotate(-90deg); }
+
+  .country-players { }
+  .country-section.collapsed .country-players { display:none; }
+
+  .draft-player-row {
+    padding: 8px 16px 8px 24px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    cursor:pointer;
+    transition: background 0.1s;
+    border-left: 2px solid transparent;
+  }
+
+  .draft-player-row:hover:not(.drafted):not(.country-drafted) {
+    background: var(--surface2);
+    border-left-color: var(--accent2);
+  }
+
+  .draft-player-row.drafted {
+    opacity:0.35;
+    cursor:default;
+    text-decoration:line-through;
+  }
+
+  .draft-player-row.country-drafted {
+    opacity:0.25;
+    cursor:not-allowed;
+  }
+
+  .dpr-pos {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.6rem;
+    letter-spacing:1px;
+    width:22px;
+    text-transform:uppercase;
+  }
+
+  .dpr-pos.PO { color:#ff9944; }
+  .dpr-pos.DF { color:#4499ff; }
+  .dpr-pos.MC { color:#44cc88; }
+  .dpr-pos.DC { color:#cc44ff; }
+
+  .dpr-name {
+    flex:1;
+    font-size:0.82rem;
+  }
+
+  .dpr-badge {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.6rem;
+    padding:2px 6px;
+    border:1px solid var(--border);
+    color:var(--muted);
+  }
+
+  /* Right: draft order + picks */
+  .draft-right-panel {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  .draft-order-panel {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    overflow-x:auto;
+  }
+
+  .draft-order-title {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.65rem;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+
+  .draft-order-row {
+    display:flex;
+    gap:6px;
+    min-width:max-content;
+  }
+
+  .draft-order-chip {
+    padding: 5px 12px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.65rem;
+    border:1px solid var(--border);
+    color:var(--muted);
+    white-space:nowrap;
+    position:relative;
+  }
+
+  .draft-order-chip.current {
+    border-color:var(--accent);
+    color:var(--accent);
+    background:#1e1a00;
+  }
+
+  .draft-order-chip.done-chip {
+    opacity:0.4;
+    text-decoration:line-through;
+  }
+
+  .draft-picks-panel {
+    flex:1;
+    overflow-y:auto;
+    padding:16px 20px;
+  }
+
+  .picks-title {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.65rem;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:14px;
+  }
+
+  .pick-row {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:7px 0;
+    border-bottom:1px solid var(--border);
+  }
+
+  .pick-num {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.65rem;
+    color:var(--muted);
+    width:28px;
+  }
+
+  .pick-user {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.7rem;
+    width:110px;
+    color:var(--accent2);
+  }
+
+  .pick-player {
+    flex:1;
+    font-size:0.82rem;
+  }
+
+  .pick-country {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.65rem;
+    color:var(--muted);
+  }
+
+  .pick-pos {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.6rem;
+    width:22px;
+  }
+
+  .pick-pos.PO { color:#ff9944; }
+  .pick-pos.DF { color:#4499ff; }
+  .pick-pos.MC { color:#44cc88; }
+  .pick-pos.DC { color:#cc44ff; }
+
+  /* Confirm modal */
+  .modal-overlay {
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.8);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .modal-overlay.open { display:flex; }
+
+  .modal-box {
+    background:var(--surface);
+    border:1px solid var(--accent);
+    padding:32px;
+    width:min(380px,90vw);
+  }
+
+  .modal-title {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.5rem;
+    letter-spacing:3px;
+    margin-bottom:8px;
+  }
+
+  .modal-body {
+    font-size:0.9rem;
+    color:var(--muted);
+    margin-bottom:24px;
+    line-height:1.6;
+  }
+
+  .modal-body strong { color:var(--text); }
+
+  .modal-actions { display:flex; gap:10px; }
+
+  .btn-secondary {
+    flex:1;
+    padding:12px;
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.75rem;
+    letter-spacing:2px;
+    cursor:pointer;
+    transition:all 0.15s;
+  }
+
+  .btn-secondary:hover { border-color:var(--muted); }
+
+  .btn-danger {
+    flex:1;
+    padding:12px;
+    background:transparent;
+    border:1px solid var(--accent);
+    color:var(--accent);
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1rem;
+    letter-spacing:3px;
+    cursor:pointer;
+    transition:all 0.15s;
+  }
+
+  .btn-danger:hover { background:#1e1a00; }
+
+  /* Toast */
+  #toast {
+    position:fixed;
+    bottom:28px;
+    right:28px;
+    padding:12px 24px;
+    background:var(--surface2);
+    border:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.75rem;
+    z-index:2000;
+    transform:translateY(80px);
+    opacity:0;
+    transition:all 0.3s;
+  }
+
+  #toast.show { transform:translateY(0); opacity:1; }
+  #toast.error { border-color:var(--red); color:var(--red); }
+  #toast.success { border-color:var(--green); color:var(--green); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:5px; height:5px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* Draft complete banner */
+  .draft-complete-banner {
+    margin: 20px 28px;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #0a1a0a, #0a0f0a);
+    border: 1px solid var(--green);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.8rem;
+    color:var(--green);
+    letter-spacing:2px;
+    display:none;
+  }
+
+  .draft-complete-banner.show { display:block; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-title">MUNDIAL<br>2026</div>
+    <div class="login-sub">FIFA World Cup · Draft League</div>
+    <label class="login-label">Selecciona tu usuario</label>
+    <div class="user-grid" id="user-grid"></div>
+    <button class="btn-primary" id="btn-enter" disabled>ENTRAR</button>
+  </div>
+</div>
+
+<!-- MAIN SCREEN -->
+<div id="screen-main" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">MUNDIAL 2026</div>
+    <div class="topbar-user">Jugando como <span id="topbar-username">—</span></div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('plantilla')">Plantilla</button>
+    <button class="nav-tab" onclick="switchTab('draft')">Draft</button>
+  </div>
+
+  <!-- PLANTILLA TAB -->
+  <div id="tab-plantilla" class="tab-content active">
+    <div class="plantilla-header">
+      <div class="plantilla-title">Mi Plantilla</div>
+      <div class="plantilla-count" id="plantilla-count">0 / 17 jugadores</div>
+    </div>
+    <div class="user-selector-row" id="plantilla-user-selector"></div>
+    <div id="plantilla-grid" class="plantilla-grid"></div>
+  </div>
+
+  <!-- DRAFT TAB -->
+  <div id="tab-draft" class="tab-content">
+    <div class="draft-status-bar">
+      <div class="draft-status-item highlight">Turno <span id="ds-turn-num">1</span></div>
+      <div class="draft-status-item">Ronda <span id="ds-round">1</span></div>
+      <div class="draft-status-item">Le toca a <span id="ds-current-user">—</span></div>
+      <div class="draft-status-item">Tus picks <span id="ds-my-picks">0</span> / 17</div>
+      <div id="draft-turn-indicator" class="draft-turn-indicator other-turn">ESPERANDO</div>
+    </div>
+    <div class="draft-complete-banner" id="draft-complete-banner">
+      ✓ DRAFT COMPLETADO — Todos los jugadores han sido seleccionados
+    </div>
+    <div class="draft-body">
+      <!-- Player list -->
+      <div class="draft-player-panel">
+        <div class="draft-search-bar">
+          <input type="text" class="draft-search-input" id="search-input" placeholder="Buscar jugador..." oninput="filterPlayers()">
+          <button class="filter-pos-btn active" onclick="togglePosFilter(this,'ALL')" data-pos="ALL">TODOS</button>
+          <button class="filter-pos-btn" onclick="togglePosFilter(this,'PO')" data-pos="PO" style="color:#ff9944">PO</button>
+          <button class="filter-pos-btn" onclick="togglePosFilter(this,'DF')" data-pos="DF" style="color:#4499ff">DF</button>
+          <button class="filter-pos-btn" onclick="togglePosFilter(this,'MC')" data-pos="MC" style="color:#44cc88">MC</button>
+          <button class="filter-pos-btn" onclick="togglePosFilter(this,'DC')" data-pos="DC" style="color:#cc44ff">DC</button>
+        </div>
+        <div class="draft-player-list" id="draft-player-list"></div>
+      </div>
+      <!-- Right panel -->
+      <div class="draft-right-panel">
+        <div class="draft-order-panel">
+          <div class="draft-order-title">Orden del draft</div>
+          <div class="draft-order-row" id="draft-order-row"></div>
+        </div>
+        <div class="draft-picks-panel">
+          <div class="picks-title">Picks realizados</div>
+          <div id="draft-picks-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">CONFIRMAR PICK</div>
+    <div class="modal-body" id="modal-body">¿Quieres fichar a este jugador?</div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">CANCELAR</button>
+      <button class="btn-danger" onclick="confirmPick()">FICHAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ────────────────────────────────────────────────────────
+// DATA
+// ────────────────────────────────────────────────────────
+const USERS = [
+  'Jon Luengo','Oier Ezkerro','Urko Fernandez','Ortiz Mardones',
+  'Urtzi Suaga','Markel Rodeño','Jokin Garcia de Cortazar',
+  'Mikel Palomero','Aritz Gutierrez'
+];
+
+const MAX_PICKS = 17;
+
+// Players data from the FIFA 2026 squads PDF
+const PLAYERS_RAW = [
+  // ALGERIA
+  {country:'Argelia',pos:'PO',name:'Mastil Melvin'},
+  {country:'Argelia',pos:'DF',name:'Mandi Aissa'},
+  {country:'Argelia',pos:'DF',name:'Abada Achraf'},
+  {country:'Argelia',pos:'DF',name:'Tougai Mohamed Amine'},
+  {country:'Argelia',pos:'DF',name:'Belaid Zineddine'},
+  {country:'Argelia',pos:'MC',name:'Zerrouki Ramiz'},
+  {country:'Argelia',pos:'DC',name:'Mahrez Riyad'},
+  {country:'Argelia',pos:'MC',name:'Aouar Houssem'},
+  {country:'Argelia',pos:'DC',name:'Gouiri Amine'},
+  {country:'Argelia',pos:'MC',name:'Chaibi Fares'},
+  {country:'Argelia',pos:'DC',name:'Hadj Moussa Anis'},
+  {country:'Argelia',pos:'DC',name:'Benbouali Nadhir'},
+  {country:'Argelia',pos:'DF',name:'Hadjam Jaouen'},
+  {country:'Argelia',pos:'MC',name:'Boudaoui Hicham'},
+  {country:'Argelia',pos:'DF',name:'Ait-Nouri Rayan'},
+  {country:'Argelia',pos:'PO',name:'Benbot Oussama'},
+  {country:'Argelia',pos:'DF',name:'Belghali Rak'},
+  {country:'Argelia',pos:'DC',name:'Amoura Mohamed'},
+  {country:'Argelia',pos:'MC',name:'Bentaleb Nabil'},
+  {country:'Argelia',pos:'DC',name:'Boulbina Adil'},
+  {country:'Argelia',pos:'DF',name:'Bensebaini Ramy'},
+  {country:'Argelia',pos:'MC',name:'Maza Ibrahim'},
+  {country:'Argelia',pos:'PO',name:'Zidane Luca'},
+  {country:'Argelia',pos:'MC',name:'Titraoui Yassine'},
+  {country:'Argelia',pos:'DC',name:'Ghedjemis Fares'},
+  {country:'Argelia',pos:'DF',name:'Chergui Samir'},
+  // ARGENTINA
+  {country:'Argentina',pos:'PO',name:'Musso Juan'},
+  {country:'Argentina',pos:'DF',name:'Balerdi Leonardo'},
+  {country:'Argentina',pos:'DF',name:'Tagliafico Nicolas'},
+  {country:'Argentina',pos:'DF',name:'Montiel Gonzalo'},
+  {country:'Argentina',pos:'MC',name:'Paredes Leandro'},
+  {country:'Argentina',pos:'DF',name:'Martinez Lisandro'},
+  {country:'Argentina',pos:'MC',name:'De Paul Rodrigo'},
+  {country:'Argentina',pos:'MC',name:'Barco Valentin'},
+  {country:'Argentina',pos:'DC',name:'Alvarez Julian'},
+  {country:'Argentina',pos:'DC',name:'Messi Lionel'},
+  {country:'Argentina',pos:'MC',name:'Lo Celso Giovani'},
+  {country:'Argentina',pos:'PO',name:'Rulli Geronimo'},
+  {country:'Argentina',pos:'DF',name:'Romero Cristian'},
+  {country:'Argentina',pos:'MC',name:'Palacios Exequiel'},
+  {country:'Argentina',pos:'MC',name:'Gonzalez Nico'},
+  {country:'Argentina',pos:'DC',name:'Almada Thiago'},
+  {country:'Argentina',pos:'DC',name:'Simeone Giuliano'},
+  {country:'Argentina',pos:'DC',name:'Paz Nico'},
+  {country:'Argentina',pos:'DF',name:'Otamendi Nicolas'},
+  {country:'Argentina',pos:'MC',name:'Mac Allister Alexis'},
+  {country:'Argentina',pos:'DC',name:'Lopez Jose Manuel'},
+  {country:'Argentina',pos:'DC',name:'Martinez Lautaro'},
+  {country:'Argentina',pos:'PO',name:'Martinez Emiliano'},
+  {country:'Argentina',pos:'MC',name:'Fernandez Enzo'},
+  {country:'Argentina',pos:'DF',name:'Medina Facundo'},
+  {country:'Argentina',pos:'DF',name:'Molina Nahuel'},
+  // AUSTRALIA
+  {country:'Australia',pos:'PO',name:'Ryan Mathew'},
+  {country:'Australia',pos:'DF',name:'Degenek Milos'},
+  {country:'Australia',pos:'DF',name:'Circati Alessandro'},
+  {country:'Australia',pos:'DF',name:'Italiano Jacob'},
+  {country:'Australia',pos:'DF',name:'Bos Jordan'},
+  {country:'Australia',pos:'DF',name:'Geria Jason'},
+  {country:'Australia',pos:'DC',name:'Leckie Mathew'},
+  {country:'Australia',pos:'MC',name:'Metcalfe Connor'},
+  {country:'Australia',pos:'DC',name:'Toure Mohamed'},
+  {country:'Australia',pos:'DC',name:'Hrustic Ajdin'},
+  {country:'Australia',pos:'DC',name:'Mabil Awer'},
+  {country:'Australia',pos:'PO',name:'Izzo Paul'},
+  {country:'Australia',pos:'MC',name:'Oneill Aiden'},
+  {country:'Australia',pos:'MC',name:'Devlin Cameron'},
+  {country:'Australia',pos:'DF',name:'Trewin Kai'},
+  {country:'Australia',pos:'DF',name:'Behich Aziz'},
+  {country:'Australia',pos:'DC',name:'Irankunda Nestory'},
+  {country:'Australia',pos:'PO',name:'Beach Patrick'},
+  {country:'Australia',pos:'DF',name:'Souttar Harry'},
+  {country:'Australia',pos:'DC',name:'Volpato Cristian'},
+  {country:'Australia',pos:'DF',name:'Burgess Cameron'},
+  {country:'Australia',pos:'MC',name:'Irvine Jackson'},
+  {country:'Australia',pos:'DC',name:'Velupillay Nishan'},
+  {country:'Australia',pos:'MC',name:'Okon-Engstler Paul'},
+  {country:'Australia',pos:'DF',name:'Herrington Lucas'},
+  {country:'Australia',pos:'DC',name:'Yengi Tete'},
+  // AUSTRIA
+  {country:'Austria',pos:'PO',name:'Schlager Alexander'},
+  {country:'Austria',pos:'DF',name:'Affengruber David'},
+  {country:'Austria',pos:'DF',name:'Danso Kevin'},
+  {country:'Austria',pos:'MC',name:'Schlager Xaver'},
+  {country:'Austria',pos:'DF',name:'Posch Stefan'},
+  {country:'Austria',pos:'MC',name:'Seiwald Nicolas'},
+  {country:'Austria',pos:'DC',name:'Arnautovic Marko'},
+  {country:'Austria',pos:'DF',name:'Alaba David'},
+  {country:'Austria',pos:'MC',name:'Sabitzer Marcel'},
+  {country:'Austria',pos:'MC',name:'Grillitsch Florian'},
+  {country:'Austria',pos:'DC',name:'Gregoritsch Michael'},
+  {country:'Austria',pos:'PO',name:'Wiegele Florian'},
+  {country:'Austria',pos:'PO',name:'Pentz Patrick'},
+  {country:'Austria',pos:'DC',name:'Kalajdzic Sasa'},
+  {country:'Austria',pos:'DF',name:'Lienhart Philipp'},
+  {country:'Austria',pos:'DF',name:'Mwene Phillip'},
+  {country:'Austria',pos:'MC',name:'Chukwuemeka Carney'},
+  {country:'Austria',pos:'MC',name:'Schmid Romano'},
+  {country:'Austria',pos:'MC',name:'Baumgartner Christoph'},
+  {country:'Austria',pos:'MC',name:'Laimer Konrad'},
+  {country:'Austria',pos:'DC',name:'Wimmer Patrick'},
+  {country:'Austria',pos:'MC',name:'Prass Alexander'},
+  {country:'Austria',pos:'DF',name:'Friedl Marco'},
+  {country:'Austria',pos:'MC',name:'Wanner Paul'},
+  {country:'Austria',pos:'DF',name:'Svoboda Michael'},
+  {country:'Austria',pos:'MC',name:'Schoepf Alessandro'},
+  // BELGIUM
+  {country:'Bélgica',pos:'PO',name:'Courtois Thibaut'},
+  {country:'Bélgica',pos:'DF',name:'Debast Zeno'},
+  {country:'Bélgica',pos:'DF',name:'Theate Arthur'},
+  {country:'Bélgica',pos:'DF',name:'Mechele Brandon'},
+  {country:'Bélgica',pos:'DF',name:'De Cuyper Maxim'},
+  {country:'Bélgica',pos:'MC',name:'Witsel Axel'},
+  {country:'Bélgica',pos:'MC',name:'De Bruyne Kevin'},
+  {country:'Bélgica',pos:'MC',name:'Tielemans Youri'},
+  {country:'Bélgica',pos:'DC',name:'Lukaku Romelu'},
+  {country:'Bélgica',pos:'DC',name:'Trossard Leandro'},
+  {country:'Bélgica',pos:'DC',name:'Doku Jeremy'},
+  {country:'Bélgica',pos:'PO',name:'Lammens Senne'},
+  {country:'Bélgica',pos:'PO',name:'Penders Mike'},
+  {country:'Bélgica',pos:'DC',name:'Lukebakio Dodi'},
+  {country:'Bélgica',pos:'DF',name:'Meunier Thomas'},
+  {country:'Bélgica',pos:'DF',name:'De Winter Koni'},
+  {country:'Bélgica',pos:'DC',name:'De Ketelaere Charles'},
+  {country:'Bélgica',pos:'DF',name:'Seys Joaquin'},
+  {country:'Bélgica',pos:'MC',name:'Moreira Diego'},
+  {country:'Bélgica',pos:'MC',name:'Vanaken Hans'},
+  {country:'Bélgica',pos:'DF',name:'Castagne Timothy'},
+  {country:'Bélgica',pos:'MC',name:'Saelemaekers Alexis'},
+  {country:'Bélgica',pos:'MC',name:'Raskin Nicolas'},
+  {country:'Bélgica',pos:'MC',name:'Onana Amadou'},
+  {country:'Bélgica',pos:'DF',name:'Ngoy Nathan'},
+  {country:'Bélgica',pos:'DC',name:'Fernandez-Pardo Matias'},
+  // BOSNIA
+  {country:'Bosnia',pos:'PO',name:'Vasilj Nikola'},
+  {country:'Bosnia',pos:'DF',name:'Mujakic Nihad'},
+  {country:'Bosnia',pos:'DF',name:'Hadzikadunic Dennis'},
+  {country:'Bosnia',pos:'DF',name:'Muharemovic Tarik'},
+  {country:'Bosnia',pos:'DF',name:'Kolasinac Sead'},
+  {country:'Bosnia',pos:'MC',name:'Tahirovic Benjamin'},
+  {country:'Bosnia',pos:'DF',name:'Dedic Amar'},
+  {country:'Bosnia',pos:'MC',name:'Gigovic Armin'},
+  {country:'Bosnia',pos:'DC',name:'Bazdar Samed'},
+  {country:'Bosnia',pos:'DC',name:'Demirovic Ermedin'},
+  {country:'Bosnia',pos:'DC',name:'Dzeko Edin'},
+  {country:'Bosnia',pos:'PO',name:'Jurkas Mladen'},
+  {country:'Bosnia',pos:'MC',name:'Basic Ivan'},
+  {country:'Bosnia',pos:'MC',name:'Sunjic Ivan'},
+  {country:'Bosnia',pos:'MC',name:'Memic Amar'},
+  {country:'Bosnia',pos:'MC',name:'Hadziahmetovic Amir'},
+  {country:'Bosnia',pos:'MC',name:'Burnic Dzenis'},
+  {country:'Bosnia',pos:'DF',name:'Katic Nikola'},
+  {country:'Bosnia',pos:'DC',name:'Alajbegovic Kerim'},
+  {country:'Bosnia',pos:'DC',name:'Bajraktarevic Esmir'},
+  {country:'Bosnia',pos:'DF',name:'Radeljic Stjepan'},
+  {country:'Bosnia',pos:'PO',name:'Zlomislic Martin'},
+  {country:'Bosnia',pos:'DC',name:'Tabakovic Haris'},
+  {country:'Bosnia',pos:'DF',name:'Celik Nidal'},
+  {country:'Bosnia',pos:'DC',name:'Lukic Jovo'},
+  {country:'Bosnia',pos:'MC',name:'Mahmic Ermin'},
+  // BRAZIL
+  {country:'Brasil',pos:'PO',name:'Alisson'},
+  {country:'Brasil',pos:'DF',name:'Wesley'},
+  {country:'Brasil',pos:'DF',name:'Gabriel Magalhaes'},
+  {country:'Brasil',pos:'DF',name:'Marquinhos'},
+  {country:'Brasil',pos:'MC',name:'Casemiro'},
+  {country:'Brasil',pos:'DF',name:'Alex Sandro'},
+  {country:'Brasil',pos:'DC',name:'Vinicius Junior'},
+  {country:'Brasil',pos:'MC',name:'Bruno Guimaraes'},
+  {country:'Brasil',pos:'DC',name:'Matheus Cunha'},
+  {country:'Brasil',pos:'DC',name:'Neymar Jr'},
+  {country:'Brasil',pos:'DC',name:'Raphinha'},
+  {country:'Brasil',pos:'PO',name:'Weverton'},
+  {country:'Brasil',pos:'DF',name:'Danilo'},
+  {country:'Brasil',pos:'DF',name:'Bremer'},
+  {country:'Brasil',pos:'DF',name:'Leo Pereira'},
+  {country:'Brasil',pos:'DF',name:'Douglas Santos'},
+  {country:'Brasil',pos:'MC',name:'Fabinho'},
+  {country:'Brasil',pos:'MC',name:'Danilo Santos'},
+  {country:'Brasil',pos:'DC',name:'Endrick'},
+  {country:'Brasil',pos:'MC',name:'Lucas Paqueta'},
+  {country:'Brasil',pos:'DC',name:'Luiz Henrique'},
+  {country:'Brasil',pos:'DC',name:'Gabriel Martinelli'},
+  {country:'Brasil',pos:'PO',name:'Ederson'},
+  {country:'Brasil',pos:'DF',name:'Roger Ibanez'},
+  {country:'Brasil',pos:'DC',name:'Igor Thiago'},
+  {country:'Brasil',pos:'DC',name:'Rayan'},
+  // CABO VERDE
+  {country:'Cabo Verde',pos:'PO',name:'Vozinha'},
+  {country:'Cabo Verde',pos:'DF',name:'Stopira'},
+  {country:'Cabo Verde',pos:'DF',name:'Diney Borges'},
+  {country:'Cabo Verde',pos:'DF',name:'Pico Lopes'},
+  {country:'Cabo Verde',pos:'DF',name:'Logan Costa'},
+  {country:'Cabo Verde',pos:'MC',name:'Kevin Pina'},
+  {country:'Cabo Verde',pos:'MC',name:'Jovane Cabral'},
+  {country:'Cabo Verde',pos:'MC',name:'Joao Paulo'},
+  {country:'Cabo Verde',pos:'DC',name:'Gilson Benchimol'},
+  {country:'Cabo Verde',pos:'MC',name:'Jamiro Monteiro'},
+  {country:'Cabo Verde',pos:'MC',name:'Garry Rodrigues'},
+  {country:'Cabo Verde',pos:'PO',name:'Marcio Rosa'},
+  {country:'Cabo Verde',pos:'DF',name:'Sidny Lopes Cabral'},
+  {country:'Cabo Verde',pos:'MC',name:'Deroy Duarte'},
+  {country:'Cabo Verde',pos:'MC',name:'Laros Duarte'},
+  {country:'Cabo Verde',pos:'MC',name:'Yannick Semedo'},
+  {country:'Cabo Verde',pos:'MC',name:'Willy Semedo'},
+  {country:'Cabo Verde',pos:'MC',name:'Telmo Arcanjo'},
+  {country:'Cabo Verde',pos:'DC',name:'Dailon Livramento'},
+  {country:'Cabo Verde',pos:'DC',name:'Ryan Mendes'},
+  {country:'Cabo Verde',pos:'MC',name:'Nuno Da Costa'},
+  {country:'Cabo Verde',pos:'DF',name:'Steven Moreira'},
+  {country:'Cabo Verde',pos:'PO',name:'CJ Dos Santos'},
+  {country:'Cabo Verde',pos:'DF',name:'Wagner Pina'},
+  {country:'Cabo Verde',pos:'DF',name:'Kelvin Pires'},
+  {country:'Cabo Verde',pos:'MC',name:'Helio Varela'},
+  // CANADA
+  {country:'Canadá',pos:'PO',name:'St. Clair Dayne'},
+  {country:'Canadá',pos:'DF',name:'Johnston Alistair'},
+  {country:'Canadá',pos:'DF',name:'Jones Ale'},
+  {country:'Canadá',pos:'DF',name:'De Fougerolles Luc'},
+  {country:'Canadá',pos:'DF',name:'Waterman Joel'},
+  {country:'Canadá',pos:'MC',name:'Choiniere Mathieu'},
+  {country:'Canadá',pos:'MC',name:'Eustaquio Stephen'},
+  {country:'Canadá',pos:'MC',name:'Kone Ismael'},
+  {country:'Canadá',pos:'DC',name:'Larin Cyle'},
+  {country:'Canadá',pos:'DC',name:'David Jonathan'},
+  {country:'Canadá',pos:'MC',name:'Millar Liam'},
+  {country:'Canadá',pos:'DC',name:'Oluwaseyi Tani'},
+  {country:'Canadá',pos:'DF',name:'Cornelius Derek'},
+  {country:'Canadá',pos:'MC',name:'Shaffelburg Jacob'},
+  {country:'Canadá',pos:'DF',name:'Bombito Moise'},
+  {country:'Canadá',pos:'PO',name:'Crepeau Maxime'},
+  {country:'Canadá',pos:'DC',name:'Buchanan Tajon'},
+  {country:'Canadá',pos:'PO',name:'Goodman Owen'},
+  {country:'Canadá',pos:'DF',name:'Davies Alphonso'},
+  {country:'Canadá',pos:'DC',name:'Ahmed Ali'},
+  {country:'Canadá',pos:'MC',name:'Osorio Jonathan'},
+  {country:'Canadá',pos:'DF',name:'Laryea Richie'},
+  {country:'Canadá',pos:'DF',name:'Sigur Niko'},
+  {country:'Canadá',pos:'DC',name:'David Promise'},
+  {country:'Canadá',pos:'MC',name:'Saliba Nathan'},
+  {country:'Canadá',pos:'MC',name:'Flores Marcelo'},
+  // COLOMBIA
+  {country:'Colombia',pos:'PO',name:'Ospina David'},
+  {country:'Colombia',pos:'DF',name:'Munoz Daniel'},
+  {country:'Colombia',pos:'DF',name:'Lucumi Jhon'},
+  {country:'Colombia',pos:'DF',name:'Arias Santiago'},
+  {country:'Colombia',pos:'MC',name:'Castano Kevin'},
+  {country:'Colombia',pos:'MC',name:'Rios Richard'},
+  {country:'Colombia',pos:'DC',name:'Diaz Luis'},
+  {country:'Colombia',pos:'MC',name:'Carrascal Jorge'},
+  {country:'Colombia',pos:'DC',name:'Cordoba Jhon'},
+  {country:'Colombia',pos:'MC',name:'Rodriguez James'},
+  {country:'Colombia',pos:'MC',name:'Arias Jhon'},
+  {country:'Colombia',pos:'PO',name:'Vargas Camilo'},
+  {country:'Colombia',pos:'DF',name:'Mina Yerry'},
+  {country:'Colombia',pos:'DF',name:'Puerta Gustavo'},
+  {country:'Colombia',pos:'MC',name:'Portilla Juan'},
+  {country:'Colombia',pos:'MC',name:'Lerma Jefferson'},
+  {country:'Colombia',pos:'DF',name:'Mojica Johan'},
+  {country:'Colombia',pos:'DF',name:'Ditta Willer'},
+  {country:'Colombia',pos:'DC',name:'Hernandez Cucho'},
+  {country:'Colombia',pos:'MC',name:'Quintero Juan'},
+  {country:'Colombia',pos:'DC',name:'Campaz Jaminton'},
+  {country:'Colombia',pos:'DF',name:'Machado Deiver'},
+  {country:'Colombia',pos:'DF',name:'Sanchez Davinson'},
+  {country:'Colombia',pos:'PO',name:'Montero Alvaro'},
+  {country:'Colombia',pos:'DC',name:'Suarez Luis'},
+  {country:'Colombia',pos:'DC',name:'Gomez Andres'},
+  // CONGO DR
+  {country:'Congo DR',pos:'PO',name:'Mpasi Lionel'},
+  {country:'Congo DR',pos:'DF',name:'Wan-Bissaka Aaron'},
+  {country:'Congo DR',pos:'DF',name:'Kapuadi Steve'},
+  {country:'Congo DR',pos:'DF',name:'Tuanzebe Axel'},
+  {country:'Congo DR',pos:'DF',name:'Batubinsika Dylan'},
+  {country:'Congo DR',pos:'MC',name:'Mukau Ngalayel'},
+  {country:'Congo DR',pos:'MC',name:'Mbuku Nathanael'},
+  {country:'Congo DR',pos:'MC',name:'Moutoussamy Samuel'},
+  {country:'Congo DR',pos:'DC',name:'Cipenga Brian'},
+  {country:'Congo DR',pos:'MC',name:'Bongonda Theo'},
+  {country:'Congo DR',pos:'DC',name:'Kakuta Gael'},
+  {country:'Congo DR',pos:'DF',name:'Kayembe Joris'},
+  {country:'Congo DR',pos:'DC',name:'Elia Meschack'},
+  {country:'Congo DR',pos:'MC',name:'Sadiki Noah'},
+  {country:'Congo DR',pos:'MC',name:'Tshibola Aaron'},
+  {country:'Congo DR',pos:'PO',name:'Fayulu Timothy'},
+  {country:'Congo DR',pos:'DC',name:'Bakambu Cedric'},
+  {country:'Congo DR',pos:'MC',name:'Pickel Charles'},
+  {country:'Congo DR',pos:'DC',name:'Mayele Fiston'},
+  {country:'Congo DR',pos:'DC',name:'Wissa Yoane'},
+  {country:'Congo DR',pos:'PO',name:'Epolo Matthieu'},
+  {country:'Congo DR',pos:'DF',name:'Mbemba Chancel'},
+  {country:'Congo DR',pos:'DC',name:'Banza Simon'},
+  {country:'Congo DR',pos:'DF',name:'Kalulu Gedeon'},
+  {country:'Congo DR',pos:'MC',name:'Kayembe Edo'},
+  {country:'Congo DR',pos:'DF',name:'Masuaku Arthur'},
+  // COSTA MARFIL
+  {country:"Costa de Marfil",pos:'PO',name:'Fofana Yahia'},
+  {country:"Costa de Marfil",pos:'DF',name:'Diomande Ousmane'},
+  {country:"Costa de Marfil",pos:'DF',name:'Konan Ghislain'},
+  {country:"Costa de Marfil",pos:'MC',name:'Seri Jean Michael'},
+  {country:"Costa de Marfil",pos:'DF',name:'Singo Wilfried'},
+  {country:"Costa de Marfil",pos:'MC',name:'Fofana Seko'},
+  {country:"Costa de Marfil",pos:'DF',name:'Kossounou Odilon'},
+  {country:"Costa de Marfil",pos:'MC',name:'Kessie Franck'},
+  {country:"Costa de Marfil",pos:'DC',name:'Bonny Ange-Yoan'},
+  {country:"Costa de Marfil",pos:'DC',name:'Adingra Simon'},
+  {country:"Costa de Marfil",pos:'DC',name:'Diomande Yan'},
+  {country:"Costa de Marfil",pos:'DC',name:'Wahi Elye'},
+  {country:"Costa de Marfil",pos:'DF',name:'Operi Christopher'},
+  {country:"Costa de Marfil",pos:'DC',name:'Diakite Oumar'},
+  {country:"Costa de Marfil",pos:'DC',name:'Diallo Amad'},
+  {country:"Costa de Marfil",pos:'PO',name:'Kone Mohamed'},
+  {country:"Costa de Marfil",pos:'DF',name:'Doue Guela'},
+  {country:"Costa de Marfil",pos:'MC',name:'Sangare Ibrahim'},
+  {country:"Costa de Marfil",pos:'DC',name:'Pepe Nicolas'},
+  {country:"Costa de Marfil",pos:'DF',name:'Agbadou Emmanuel'},
+  {country:"Costa de Marfil",pos:'DF',name:'Ndicka Evan'},
+  {country:"Costa de Marfil",pos:'DC',name:'Guessand Evann'},
+  {country:"Costa de Marfil",pos:'PO',name:'Lafont Alban'},
+  {country:"Costa de Marfil",pos:'DC',name:'Toure Bazoumana'},
+  {country:"Costa de Marfil",pos:'MC',name:'Guiagon Parfait'},
+  {country:"Costa de Marfil",pos:'MC',name:'Oulai Christ Inao'},
+  // CROATIA
+  {country:'Croacia',pos:'PO',name:'Livakovic Dominik'},
+  {country:'Croacia',pos:'DF',name:'Stanisic Josip'},
+  {country:'Croacia',pos:'DF',name:'Pongracic Marin'},
+  {country:'Croacia',pos:'DF',name:'Gvardiol Josko'},
+  {country:'Croacia',pos:'DF',name:'Caleta-Car Duje'},
+  {country:'Croacia',pos:'DF',name:'Sutalo Josip'},
+  {country:'Croacia',pos:'MC',name:'Moro Nikola'},
+  {country:'Croacia',pos:'MC',name:'Kovacic Mateo'},
+  {country:'Croacia',pos:'DC',name:'Kramaric Andrej'},
+  {country:'Croacia',pos:'MC',name:'Modric Luka'},
+  {country:'Croacia',pos:'DC',name:'Budimir Ante'},
+  {country:'Croacia',pos:'PO',name:'Pandur Ivor'},
+  {country:'Croacia',pos:'MC',name:'Vlasic Nikola'},
+  {country:'Croacia',pos:'DC',name:'Perisic Ivan'},
+  {country:'Croacia',pos:'MC',name:'Pasalic Mario'},
+  {country:'Croacia',pos:'MC',name:'Baturina Martin'},
+  {country:'Croacia',pos:'MC',name:'Sucic Petar'},
+  {country:'Croacia',pos:'DF',name:'Jakic Kristijan'},
+  {country:'Croacia',pos:'MC',name:'Fruk Toni'},
+  {country:'Croacia',pos:'DC',name:'Matanovic Igor'},
+  {country:'Croacia',pos:'MC',name:'Sucic Luka'},
+  {country:'Croacia',pos:'DF',name:'Vuskovic Luka'},
+  {country:'Croacia',pos:'PO',name:'Kotarski Dominik'},
+  {country:'Croacia',pos:'DC',name:'Pasalic Marco'},
+  {country:'Croacia',pos:'DF',name:'Erlic Martin'},
+  {country:'Croacia',pos:'DC',name:'Musa Petar'},
+  // CURACAO
+  {country:'Curazao',pos:'PO',name:'Room Eloy'},
+  {country:'Curazao',pos:'DF',name:'Sambo Shurandy'},
+  {country:'Curazao',pos:'DF',name:'Gaari Jurien'},
+  {country:'Curazao',pos:'DF',name:'Van Eijma Roshon'},
+  {country:'Curazao',pos:'DF',name:'Floranus Sherel'},
+  {country:'Curazao',pos:'MC',name:'Roemeratoe Godfried'},
+  {country:'Curazao',pos:'MC',name:'Bacuna Juninho'},
+  {country:'Curazao',pos:'MC',name:'Comenencia Livano'},
+  {country:'Curazao',pos:'DC',name:'Locadia Juergen'},
+  {country:'Curazao',pos:'MC',name:'Bacuna Leandro'},
+  {country:'Curazao',pos:'DC',name:'Antonisse Jeremy'},
+  {country:'Curazao',pos:'DC',name:'Hansen Sontje'},
+  {country:'Curazao',pos:'DC',name:'Noslin Tyrese'},
+  {country:'Curazao',pos:'DC',name:'Gorre Kenji'},
+  {country:'Curazao',pos:'MC',name:'Martha Arjany'},
+  {country:'Curazao',pos:'DC',name:'Margaritha Jearl'},
+  {country:'Curazao',pos:'DC',name:'Kuwas Brandley'},
+  {country:'Curazao',pos:'DF',name:'Obispo Armando'},
+  {country:'Curazao',pos:'DC',name:'Kastaneer Gervane'},
+  {country:'Curazao',pos:'DF',name:'Brenet Joshua'},
+  {country:'Curazao',pos:'MC',name:'Chong Tahith'},
+  {country:'Curazao',pos:'MC',name:'Felida Kevin'},
+  {country:'Curazao',pos:'DF',name:'Bazoer Riechedly'},
+  {country:'Curazao',pos:'DF',name:'Fonville Deveron'},
+  {country:'Curazao',pos:'PO',name:'Bodak Tyrick'},
+  {country:'Curazao',pos:'PO',name:'Doornbusch Trevor'},
+  // CZECH REPUBLIC
+  {country:'República Checa',pos:'PO',name:'Kovar Matej'},
+  {country:'República Checa',pos:'DF',name:'Zima David'},
+  {country:'República Checa',pos:'DF',name:'Holes Tomas'},
+  {country:'República Checa',pos:'DF',name:'Hranac Robin'},
+  {country:'República Checa',pos:'DF',name:'Coufal Vladimir'},
+  {country:'República Checa',pos:'DF',name:'Chaloupek Stepan'},
+  {country:'República Checa',pos:'DF',name:'Krejci Ladislav'},
+  {country:'República Checa',pos:'MC',name:'Darida Vladimir'},
+  {country:'República Checa',pos:'DC',name:'Hlozek Adam'},
+  {country:'República Checa',pos:'DC',name:'Schick Patrik'},
+  {country:'República Checa',pos:'DC',name:'Kuchta Jan'},
+  {country:'República Checa',pos:'MC',name:'Cerv Lukas'},
+  {country:'República Checa',pos:'DC',name:'Chytil Mojmir'},
+  {country:'República Checa',pos:'DF',name:'Jurasek David'},
+  {country:'República Checa',pos:'DC',name:'Sulc Pavel'},
+  {country:'República Checa',pos:'PO',name:'Stanek Jindrich'},
+  {country:'República Checa',pos:'MC',name:'Provod Lukas'},
+  {country:'República Checa',pos:'MC',name:'Sadilek Michal'},
+  {country:'República Checa',pos:'DC',name:'Chory Tomas'},
+  {country:'República Checa',pos:'DF',name:'Zeleny Jaroslav'},
+  {country:'República Checa',pos:'DF',name:'Doudera David'},
+  {country:'República Checa',pos:'MC',name:'Soucek Tomas'},
+  {country:'República Checa',pos:'PO',name:'Hornicek Lukas'},
+  {country:'República Checa',pos:'MC',name:'Sojka Alexandr'},
+  {country:'República Checa',pos:'MC',name:'Sochurek Hugo'},
+  {country:'República Checa',pos:'DC',name:'Visinsky Denis'},
+  // ECUADOR
+  {country:'Ecuador',pos:'PO',name:'Galindez Hernan'},
+  {country:'Ecuador',pos:'DF',name:'Torres Felix'},
+  {country:'Ecuador',pos:'DF',name:'Hincapie Piero'},
+  {country:'Ecuador',pos:'DF',name:'Ordonez Joel'},
+  {country:'Ecuador',pos:'MC',name:'Alcivar Jordy'},
+  {country:'Ecuador',pos:'DF',name:'Pacho Willian'},
+  {country:'Ecuador',pos:'DF',name:'Estupinan Pervis'},
+  {country:'Ecuador',pos:'MC',name:'Valencia Anthony'},
+  {country:'Ecuador',pos:'DC',name:'Yeboah John'},
+  {country:'Ecuador',pos:'MC',name:'Paez Kendry'},
+  {country:'Ecuador',pos:'DC',name:'Rodriguez Kevin'},
+  {country:'Ecuador',pos:'PO',name:'Ramirez Moises'},
+  {country:'Ecuador',pos:'DC',name:'Valencia Enner'},
+  {country:'Ecuador',pos:'MC',name:'Minda Alan'},
+  {country:'Ecuador',pos:'MC',name:'Vite Pedro'},
+  {country:'Ecuador',pos:'DC',name:'Caicedo Jordy'},
+  {country:'Ecuador',pos:'DF',name:'Preciado Angelo'},
+  {country:'Ecuador',pos:'MC',name:'Castillo Denil'},
+  {country:'Ecuador',pos:'DC',name:'Plata Gonzalo'},
+  {country:'Ecuador',pos:'DC',name:'Angulo Nilson'},
+  {country:'Ecuador',pos:'MC',name:'Franco Alan'},
+  {country:'Ecuador',pos:'PO',name:'Valle Gonzalo'},
+  {country:'Ecuador',pos:'MC',name:'Caicedo Moises'},
+  {country:'Ecuador',pos:'DC',name:'Arevalo Jeremy'},
+  {country:'Ecuador',pos:'DF',name:'Porozo Jackson'},
+  {country:'Ecuador',pos:'DF',name:'Medina Yaimar'},
+  // EGYPT
+  {country:'Egipto',pos:'PO',name:'Mohamed Elshenawy'},
+  {country:'Egipto',pos:'DF',name:'Yasser Ibrahim'},
+  {country:'Egipto',pos:'DF',name:'Mohamed Hany'},
+  {country:'Egipto',pos:'DF',name:'Hossam Abdelmaguid'},
+  {country:'Egipto',pos:'DF',name:'Ramy Rabia'},
+  {country:'Egipto',pos:'DF',name:'Mohamed Abdelmoneim'},
+  {country:'Egipto',pos:'DC',name:'Trezeguet'},
+  {country:'Egipto',pos:'MC',name:'Emam Ashour'},
+  {country:'Egipto',pos:'DC',name:'Hamza Abdelkarim'},
+  {country:'Egipto',pos:'DC',name:'Mohamed Salah'},
+  {country:'Egipto',pos:'MC',name:'Mostafa Zico'},
+  {country:'Egipto',pos:'DC',name:'Haissem Hassan'},
+  {country:'Egipto',pos:'DF',name:'Ahmed Fatouh'},
+  {country:'Egipto',pos:'MC',name:'Hamdy Fathy'},
+  {country:'Egipto',pos:'DF',name:'Karim Hafez'},
+  {country:'Egipto',pos:'PO',name:'Mahdy Soliman'},
+  {country:'Egipto',pos:'MC',name:'Mohanad Lashin'},
+  {country:'Egipto',pos:'MC',name:'Nabil Donga'},
+  {country:'Egipto',pos:'MC',name:'Marawan Attia'},
+  {country:'Egipto',pos:'DC',name:'Ibrahim Adel'},
+  {country:'Egipto',pos:'MC',name:'Mahmoud Saber'},
+  {country:'Egipto',pos:'DC',name:'Omar Marmoush'},
+  {country:'Egipto',pos:'PO',name:'Mostafa Shoubir'},
+  {country:'Egipto',pos:'DF',name:'Tarek Alaa'},
+  {country:'Egipto',pos:'DC',name:'Zizo'},
+  {country:'Egipto',pos:'PO',name:'Mohamed Alaa'},
+  // ENGLAND
+  {country:'Inglaterra',pos:'PO',name:'Pickford Jordan'},
+  {country:'Inglaterra',pos:'DF',name:'Konsa Ezri'},
+  {country:'Inglaterra',pos:'DF',name:'Oreilly Nico'},
+  {country:'Inglaterra',pos:'MC',name:'Rice Declan'},
+  {country:'Inglaterra',pos:'DF',name:'Stones John'},
+  {country:'Inglaterra',pos:'DF',name:'Guehi Marc'},
+  {country:'Inglaterra',pos:'DC',name:'Saka Bukayo'},
+  {country:'Inglaterra',pos:'MC',name:'Anderson Elliot'},
+  {country:'Inglaterra',pos:'DC',name:'Kane Harry'},
+  {country:'Inglaterra',pos:'MC',name:'Bellingham Jude'},
+  {country:'Inglaterra',pos:'DC',name:'Rashford Marcus'},
+  {country:'Inglaterra',pos:'DF',name:'Livramento Tino'},
+  {country:'Inglaterra',pos:'PO',name:'Henderson Dean'},
+  {country:'Inglaterra',pos:'MC',name:'Henderson Jordan'},
+  {country:'Inglaterra',pos:'DF',name:'Burn Dan'},
+  {country:'Inglaterra',pos:'MC',name:'Mainoo Kobbie'},
+  {country:'Inglaterra',pos:'MC',name:'Rogers Morgan'},
+  {country:'Inglaterra',pos:'DC',name:'Gordon Anthony'},
+  {country:'Inglaterra',pos:'DC',name:'Watkins Ollie'},
+  {country:'Inglaterra',pos:'DC',name:'Madueke Noni'},
+  {country:'Inglaterra',pos:'MC',name:'Eze Eberechi'},
+  {country:'Inglaterra',pos:'DC',name:'Toney Ivan'},
+  {country:'Inglaterra',pos:'PO',name:'Trafford James'},
+  {country:'Inglaterra',pos:'DF',name:'James Reece'},
+  {country:'Inglaterra',pos:'DF',name:'Spence Djed'},
+  {country:'Inglaterra',pos:'DF',name:'Quansah Jarell'},
+  // FRANCE
+  {country:'Francia',pos:'PO',name:'Samba Brice'},
+  {country:'Francia',pos:'DF',name:'Gusto Malo'},
+  {country:'Francia',pos:'DF',name:'Digne Lucas'},
+  {country:'Francia',pos:'DF',name:'Upamecano Dayot'},
+  {country:'Francia',pos:'DF',name:'Kounde Jules'},
+  {country:'Francia',pos:'MC',name:'Kone Manu'},
+  {country:'Francia',pos:'DC',name:'Dembele Ousmane'},
+  {country:'Francia',pos:'MC',name:'Tchouameni Aurelien'},
+  {country:'Francia',pos:'DC',name:'Thuram Marcus'},
+  {country:'Francia',pos:'DC',name:'Mbappe Kylian'},
+  {country:'Francia',pos:'DC',name:'Olise Michael'},
+  {country:'Francia',pos:'DC',name:'Barcola Bradley'},
+  {country:'Francia',pos:'MC',name:'Kante Ngolo'},
+  {country:'Francia',pos:'MC',name:'Rabiot Adrien'},
+  {country:'Francia',pos:'DF',name:'Konate Ibrahima'},
+  {country:'Francia',pos:'PO',name:'Maignan Mike'},
+  {country:'Francia',pos:'DF',name:'Saliba William'},
+  {country:'Francia',pos:'MC',name:'Zaire-Emery Warren'},
+  {country:'Francia',pos:'DF',name:'Hernandez Theo'},
+  {country:'Francia',pos:'DC',name:'Doue Desire'},
+  {country:'Francia',pos:'DF',name:'Hernandez Lucas'},
+  {country:'Francia',pos:'DC',name:'Mateta Jean-Philippe'},
+  {country:'Francia',pos:'PO',name:'Risser Robin'},
+  {country:'Francia',pos:'MC',name:'Cherki Rayan'},
+  {country:'Francia',pos:'MC',name:'Akliouche Maghnes'},
+  {country:'Francia',pos:'DF',name:'Lacroix Maxence'},
+  // GERMANY
+  {country:'Alemania',pos:'PO',name:'Neuer Manuel'},
+  {country:'Alemania',pos:'DF',name:'Ruediger Antonio'},
+  {country:'Alemania',pos:'DF',name:'Anton Waldemar'},
+  {country:'Alemania',pos:'DF',name:'Tah Jonathan'},
+  {country:'Alemania',pos:'MC',name:'Pavlovic Aleksandar'},
+  {country:'Alemania',pos:'DF',name:'Kimmich Joshua'},
+  {country:'Alemania',pos:'DC',name:'Havertz Kai'},
+  {country:'Alemania',pos:'MC',name:'Goretzka Leon'},
+  {country:'Alemania',pos:'MC',name:'Leweling Jamie'},
+  {country:'Alemania',pos:'MC',name:'Musiala Jamal'},
+  {country:'Alemania',pos:'DC',name:'Woltemade Nick'},
+  {country:'Alemania',pos:'PO',name:'Baumann Oliver'},
+  {country:'Alemania',pos:'MC',name:'Gross Pascal'},
+  {country:'Alemania',pos:'DC',name:'Beier Maximilian'},
+  {country:'Alemania',pos:'DF',name:'Schlotterbeck Nico'},
+  {country:'Alemania',pos:'MC',name:'Stiller Angelo'},
+  {country:'Alemania',pos:'MC',name:'Wirtz Florian'},
+  {country:'Alemania',pos:'DF',name:'Brown Nathaniel'},
+  {country:'Alemania',pos:'MC',name:'Sane Leroy'},
+  {country:'Alemania',pos:'MC',name:'Amiri Nadiem'},
+  {country:'Alemania',pos:'PO',name:'Nuebel Alexander'},
+  {country:'Alemania',pos:'DF',name:'Raum David'},
+  {country:'Alemania',pos:'MC',name:'Nmecha Felix'},
+  {country:'Alemania',pos:'DF',name:'Thiaw Malick'},
+  {country:'Alemania',pos:'MC',name:'Karl Lennart'},
+  {country:'Alemania',pos:'DC',name:'Undav Deniz'},
+  // GHANA
+  {country:'Ghana',pos:'PO',name:'Zigi Lawrence Ati'},
+  {country:'Ghana',pos:'DF',name:'Seidu Alidu'},
+  {country:'Ghana',pos:'MC',name:'Yirenkyi Caleb'},
+  {country:'Ghana',pos:'DF',name:'Adjetey Jonas'},
+  {country:'Ghana',pos:'MC',name:'Partey Thomas'},
+  {country:'Ghana',pos:'DF',name:'Mumin Abdul'},
+  {country:'Ghana',pos:'DC',name:'Issahaku Fatawu'},
+  {country:'Ghana',pos:'MC',name:'Sibo Kwasi'},
+  {country:'Ghana',pos:'DC',name:'Ayew Jordan'},
+  {country:'Ghana',pos:'DC',name:'Thomas-Asante Brandon'},
+  {country:'Ghana',pos:'MC',name:'Semenyo Antoine'},
+  {country:'Ghana',pos:'PO',name:'Anang Joseph'},
+  {country:'Ghana',pos:'DC',name:'Baah Christopher Bonsu'},
+  {country:'Ghana',pos:'DF',name:'Mensah Gideon'},
+  {country:'Ghana',pos:'MC',name:'Owusu Elisha'},
+  {country:'Ghana',pos:'PO',name:'Asare Benjamin'},
+  {country:'Ghana',pos:'DF',name:'Rahman Baba'},
+  {country:'Ghana',pos:'DF',name:'Opoku Jerome'},
+  {country:'Ghana',pos:'DC',name:'Williams Inaki'},
+  {country:'Ghana',pos:'MC',name:'Boakye Augustine'},
+  {country:'Ghana',pos:'DF',name:'Oppong Kojo Peprah'},
+  {country:'Ghana',pos:'DC',name:'Sulemana Kamaldeen'},
+  {country:'Ghana',pos:'DF',name:'Luckassen Derrick'},
+  {country:'Ghana',pos:'DC',name:'Nuamah Ernest'},
+  {country:'Ghana',pos:'DC',name:'Adu Prince'},
+  {country:'Ghana',pos:'DF',name:'Senaya Marvin'},
+  // HAITI
+  {country:'Haití',pos:'PO',name:'Placide Johny'},
+  {country:'Haití',pos:'DF',name:'Arcus Carlens'},
+  {country:'Haití',pos:'DF',name:'Thermoncy Keeto'},
+  {country:'Haití',pos:'DF',name:'Ade Ricardo'},
+  {country:'Haití',pos:'DF',name:'Delcroix Hannes'},
+  {country:'Haití',pos:'MC',name:'Sainte Carl'},
+  {country:'Haití',pos:'DC',name:'Etienne Derrick'},
+  {country:'Haití',pos:'DF',name:'Experience Martin'},
+  {country:'Haití',pos:'DC',name:'Nazon Duckens'},
+  {country:'Haití',pos:'MC',name:'Bellegarde Jean-Ricner'},
+  {country:'Haití',pos:'DC',name:'Deedson Louicius'},
+  {country:'Haití',pos:'PO',name:'Pierre Alexandre'},
+  {country:'Haití',pos:'DF',name:'Lacroix Markhus'},
+  {country:'Haití',pos:'MC',name:'Pierre Leverton'},
+  {country:'Haití',pos:'DC',name:'Providence Ruben'},
+  {country:'Haití',pos:'DC',name:'Joseph Lenny'},
+  {country:'Haití',pos:'MC',name:'Jean Jacques Danley'},
+  {country:'Haití',pos:'DC',name:'Isidor Wilson'},
+  {country:'Haití',pos:'DC',name:'Fortune Yassin'},
+  {country:'Haití',pos:'DC',name:'Pierrot Frantzdy'},
+  {country:'Haití',pos:'DC',name:'Casimir Josue'},
+  {country:'Haití',pos:'DF',name:'Duverne Jean-Kevin'},
+  {country:'Haití',pos:'PO',name:'Duverger Josue'},
+  {country:'Haití',pos:'DF',name:'Paugain Wilguens'},
+  {country:'Haití',pos:'MC',name:'Simon Dominique'},
+  {country:'Haití',pos:'MC',name:'Pierre Woodensky'},
+  // IRAN
+  {country:'Irán',pos:'PO',name:'Beiranvand Alireza'},
+  {country:'Irán',pos:'DF',name:'Hardani Saleh'},
+  {country:'Irán',pos:'DF',name:'Hajisafi Ehsan'},
+  {country:'Irán',pos:'DF',name:'Khalilzadeh Shoja'},
+  {country:'Irán',pos:'DF',name:'Mohammadi Milad'},
+  {country:'Irán',pos:'MC',name:'Ezatolahi Saeid'},
+  {country:'Irán',pos:'MC',name:'Jahanbakhsh Alireza'},
+  {country:'Irán',pos:'MC',name:'Mohebbi Mohammad'},
+  {country:'Irán',pos:'DC',name:'Taremi Mehdi'},
+  {country:'Irán',pos:'DC',name:'Ghayedi Mehdi'},
+  {country:'Irán',pos:'DC',name:'Alipour Ali'},
+  {country:'Irán',pos:'PO',name:'Niazmand Payam'},
+  {country:'Irán',pos:'DF',name:'Kanani Hossein'},
+  {country:'Irán',pos:'MC',name:'Ghoddos Saman'},
+  {country:'Irán',pos:'MC',name:'Cheshmi Roozbeh'},
+  {country:'Irán',pos:'MC',name:'Torabi Mehdi'},
+  {country:'Irán',pos:'DF',name:'Yousefi Arya'},
+  {country:'Irán',pos:'DC',name:'Hosseinzadeh Amirhossein'},
+  {country:'Irán',pos:'DF',name:'Nemati Ali'},
+  {country:'Irán',pos:'DC',name:'Moghanloo Shahriyar'},
+  {country:'Irán',pos:'MC',name:'Ghorbani Mohammad'},
+  {country:'Irán',pos:'PO',name:'Hosseini Hossein'},
+  {country:'Irán',pos:'DF',name:'Rezaeian Ramin'},
+  {country:'Irán',pos:'DC',name:'Dargahi Dennis'},
+  {country:'Irán',pos:'DF',name:'Iri Danial'},
+  {country:'Irán',pos:'MC',name:'Razaghinia Amirmohammad'},
+  // IRAQ
+  {country:'Irak',pos:'PO',name:'Fahad Talib'},
+  {country:'Irak',pos:'DF',name:'Rebin Ghareeb'},
+  {country:'Irak',pos:'DF',name:'Hussein Ali'},
+  {country:'Irak',pos:'DF',name:'Zaid Tahseen'},
+  {country:'Irak',pos:'DF',name:'Akam Hashim'},
+  {country:'Irak',pos:'DF',name:'Munaf Younus'},
+  {country:'Irak',pos:'MC',name:'Youssef Amyn'},
+  {country:'Irak',pos:'MC',name:'Ibrahim Bayesh'},
+  {country:'Irak',pos:'DC',name:'Ali Alhamadi'},
+  {country:'Irak',pos:'DC',name:'Mohanad Ali'},
+  {country:'Irak',pos:'DC',name:'Ahmed Qasim'},
+  {country:'Irak',pos:'PO',name:'Jalal Hassan'},
+  {country:'Irak',pos:'DC',name:'Ali Yousif'},
+  {country:'Irak',pos:'MC',name:'Zidane Iqbal'},
+  {country:'Irak',pos:'DF',name:'Ahmed Yahya'},
+  {country:'Irak',pos:'MC',name:'Amir Alammari'},
+  {country:'Irak',pos:'DC',name:'Ali Jasim'},
+  {country:'Irak',pos:'DC',name:'Aymen Hussein'},
+  {country:'Irak',pos:'MC',name:'Kevin Yakob'},
+  {country:'Irak',pos:'MC',name:'Aimar Sher'},
+  {country:'Irak',pos:'DC',name:'Marko Farji'},
+  {country:'Irak',pos:'PO',name:'Ahmed Basil'},
+  {country:'Irak',pos:'DF',name:'Merchas Doski'},
+  {country:'Irak',pos:'MC',name:'Zaid Ismael'},
+  {country:'Irak',pos:'DF',name:'Mustafa Saadoon'},
+  {country:'Irak',pos:'DF',name:'Frans Putros'},
+  // JAPAN
+  {country:'Japón',pos:'PO',name:'Suzuki Zion'},
+  {country:'Japón',pos:'DF',name:'Sugawara Yukinari'},
+  {country:'Japón',pos:'DF',name:'Taniguchi Shogo'},
+  {country:'Japón',pos:'DF',name:'Itakura Kou'},
+  {country:'Japón',pos:'DF',name:'Nagatomo Yuto'},
+  {country:'Japón',pos:'MC',name:'Endo Wataru'},
+  {country:'Japón',pos:'MC',name:'Tanaka Ao'},
+  {country:'Japón',pos:'MC',name:'Kubo Takefusa'},
+  {country:'Japón',pos:'DC',name:'Goto Keisuke'},
+  {country:'Japón',pos:'MC',name:'Doan Ritsu'},
+  {country:'Japón',pos:'MC',name:'Maeda Daizen'},
+  {country:'Japón',pos:'PO',name:'Osako Keisuke'},
+  {country:'Japón',pos:'MC',name:'Nakamura Keito'},
+  {country:'Japón',pos:'MC',name:'Ito Junya'},
+  {country:'Japón',pos:'MC',name:'Kamada Daichi'},
+  {country:'Japón',pos:'DF',name:'Watanabe Tsuyoshi'},
+  {country:'Japón',pos:'MC',name:'Suzuki Yuito'},
+  {country:'Japón',pos:'DC',name:'Ueda Ayase'},
+  {country:'Japón',pos:'DC',name:'Ogawa Koki'},
+  {country:'Japón',pos:'DF',name:'Seko Ayumu'},
+  {country:'Japón',pos:'DF',name:'Ito Hiroki'},
+  {country:'Japón',pos:'DF',name:'Tomiyasu Takehiro'},
+  {country:'Japón',pos:'PO',name:'Hayakawa Tomoki'},
+  {country:'Japón',pos:'MC',name:'Sano Kaishu'},
+  {country:'Japón',pos:'DF',name:'Suzuki Junnosuke'},
+  {country:'Japón',pos:'DC',name:'Shiogai Kento'},
+  // JORDAN
+  {country:'Jordania',pos:'PO',name:'Yazeed Abulaila'},
+  {country:'Jordania',pos:'DF',name:'Mohammad Abuhasheesh'},
+  {country:'Jordania',pos:'DF',name:'Abdallah Nasib'},
+  {country:'Jordania',pos:'DF',name:'Husam Abudahab'},
+  {country:'Jordania',pos:'DF',name:'Yazan Alarab'},
+  {country:'Jordania',pos:'MC',name:'Amer Jamous'},
+  {country:'Jordania',pos:'DC',name:'Mohammad Abuzraiq'},
+  {country:'Jordania',pos:'MC',name:'Noor Alrawabdeh'},
+  {country:'Jordania',pos:'DC',name:'Ali Olwan'},
+  {country:'Jordania',pos:'DC',name:'Mousa Altamari'},
+  {country:'Jordania',pos:'DC',name:'Odeh Fakhoury'},
+  {country:'Jordania',pos:'PO',name:'Nour Baniateyah'},
+  {country:'Jordania',pos:'DC',name:'Mahmoud Almardi'},
+  {country:'Jordania',pos:'MC',name:'Rajaei Ayed'},
+  {country:'Jordania',pos:'MC',name:'Ibrahim Sadeh'},
+  {country:'Jordania',pos:'DF',name:'Mohammad Abualnadi'},
+  {country:'Jordania',pos:'DF',name:'Saleem Obaid'},
+  {country:'Jordania',pos:'DC',name:'Ibrahim Sabra'},
+  {country:'Jordania',pos:'DF',name:'Saed Alrosan'},
+  {country:'Jordania',pos:'MC',name:'Mohannad Abutaha'},
+  {country:'Jordania',pos:'MC',name:'Nizar Alrashdan'},
+  {country:'Jordania',pos:'PO',name:'Abdallah Alfakhori'},
+  {country:'Jordania',pos:'DF',name:'Ehsan Haddad'},
+  {country:'Jordania',pos:'DC',name:'Ali Azaizeh'},
+  {country:'Jordania',pos:'MC',name:'Mohammad Aldaoud'},
+  {country:'Jordania',pos:'DF',name:'Anas Badawi'},
+  // KOREA
+  {country:'Corea del Sur',pos:'PO',name:'Kim Seunggyu'},
+  {country:'Corea del Sur',pos:'DF',name:'Lee Hanbeom'},
+  {country:'Corea del Sur',pos:'MC',name:'Lee Gihyuk'},
+  {country:'Corea del Sur',pos:'DF',name:'Kim Minjae'},
+  {country:'Corea del Sur',pos:'DF',name:'Kim Taehyeon'},
+  {country:'Corea del Sur',pos:'MC',name:'Hwang Inbeom'},
+  {country:'Corea del Sur',pos:'DC',name:'Son Heungmin'},
+  {country:'Corea del Sur',pos:'MC',name:'Paik Seungho'},
+  {country:'Corea del Sur',pos:'DC',name:'Cho Guesung'},
+  {country:'Corea del Sur',pos:'MC',name:'Lee Jaesung'},
+  {country:'Corea del Sur',pos:'MC',name:'Hwang Heechan'},
+  {country:'Corea del Sur',pos:'PO',name:'Song Bumkeun'},
+  {country:'Corea del Sur',pos:'DF',name:'Lee Taeseok'},
+  {country:'Corea del Sur',pos:'DF',name:'Cho Wije'},
+  {country:'Corea del Sur',pos:'DF',name:'Kim Moonhwan'},
+  {country:'Corea del Sur',pos:'DF',name:'Park Jinseob'},
+  {country:'Corea del Sur',pos:'MC',name:'Bae Junho'},
+  {country:'Corea del Sur',pos:'DC',name:'Oh Hyeongyu'},
+  {country:'Corea del Sur',pos:'MC',name:'Lee Kangin'},
+  {country:'Corea del Sur',pos:'MC',name:'Yang Hyunjun'},
+  {country:'Corea del Sur',pos:'PO',name:'Jo Hyeonwoo'},
+  {country:'Corea del Sur',pos:'DF',name:'Seol Youngwoo'},
+  {country:'Corea del Sur',pos:'DF',name:'Castrop Jens'},
+  {country:'Corea del Sur',pos:'MC',name:'Kim Jingyu'},
+  {country:'Corea del Sur',pos:'MC',name:'Eom Jisung'},
+  {country:'Corea del Sur',pos:'MC',name:'Lee Donggyeong'},
+  // MEXICO
+  {country:'México',pos:'PO',name:'Rangel Raul'},
+  {country:'México',pos:'DF',name:'Sanchez Jorge'},
+  {country:'México',pos:'DF',name:'Montes Cesar'},
+  {country:'México',pos:'DF',name:'Alvarez Edson'},
+  {country:'México',pos:'DF',name:'Vasquez Johan'},
+  {country:'México',pos:'MC',name:'Lira Erik'},
+  {country:'México',pos:'MC',name:'Romo Luis'},
+  {country:'México',pos:'MC',name:'Fidalgo Alvaro'},
+  {country:'México',pos:'DC',name:'Jimenez Raul'},
+  {country:'México',pos:'DC',name:'Vega Alexis'},
+  {country:'México',pos:'DC',name:'Gimenez Santiago'},
+  {country:'México',pos:'PO',name:'Acevedo Carlos'},
+  {country:'México',pos:'PO',name:'Ochoa Guillermo'},
+  {country:'México',pos:'DC',name:'Gonzalez Armando'},
+  {country:'México',pos:'DF',name:'Reyes Israel'},
+  {country:'México',pos:'DC',name:'Quinones Julian'},
+  {country:'México',pos:'MC',name:'Pineda Orbelin'},
+  {country:'México',pos:'MC',name:'Vargas Obed'},
+  {country:'México',pos:'MC',name:'Mora Gilberto'},
+  {country:'México',pos:'DF',name:'Chavez Mateo'},
+  {country:'México',pos:'DC',name:'Huerta Cesar'},
+  {country:'México',pos:'DC',name:'Martinez Guillermo'},
+  {country:'México',pos:'DF',name:'Gallardo Jesus'},
+  {country:'México',pos:'MC',name:'Chavez Luis'},
+  {country:'México',pos:'DC',name:'Alvarado Roberto'},
+  {country:'México',pos:'MC',name:'Gutierrez Brian'},
+  // MOROCCO
+  {country:'Marruecos',pos:'PO',name:'Bounou Yassine'},
+  {country:'Marruecos',pos:'DF',name:'Hakimi Achraf'},
+  {country:'Marruecos',pos:'DF',name:'Mazraoui Noussair'},
+  {country:'Marruecos',pos:'MC',name:'Amrabat Sofyan'},
+  {country:'Marruecos',pos:'DF',name:'Aguerd Nayef'},
+  {country:'Marruecos',pos:'MC',name:'Bouaddi Ayyoub'},
+  {country:'Marruecos',pos:'MC',name:'Talbi Chemsdine'},
+  {country:'Marruecos',pos:'MC',name:'Ounahi Azzedine'},
+  {country:'Marruecos',pos:'DC',name:'Rahimi Souane'},
+  {country:'Marruecos',pos:'DC',name:'Diaz Brahim'},
+  {country:'Marruecos',pos:'MC',name:'Saibari Ismael'},
+  {country:'Marruecos',pos:'PO',name:'El Kajoui Munir'},
+  {country:'Marruecos',pos:'DF',name:'El Ouahdi Zakaria'},
+  {country:'Marruecos',pos:'DF',name:'Diop Issa'},
+  {country:'Marruecos',pos:'MC',name:'El Mourabet Samir'},
+  {country:'Marruecos',pos:'MC',name:'Yassine Gessime'},
+  {country:'Marruecos',pos:'DC',name:'Ezzalzouli Abde'},
+  {country:'Marruecos',pos:'DF',name:'Riad Chadi'},
+  {country:'Marruecos',pos:'DF',name:'Belammari Youssef'},
+  {country:'Marruecos',pos:'DC',name:'El Kaabi Ayoub'},
+  {country:'Marruecos',pos:'DC',name:'Amaimouni Ayoube'},
+  {country:'Marruecos',pos:'PO',name:'Tagnaouti Ahmed Reda'},
+  {country:'Marruecos',pos:'MC',name:'El Khannouss Bilal'},
+  {country:'Marruecos',pos:'MC',name:'El Aynaoui Neil'},
+  {country:'Marruecos',pos:'DF',name:'Halhal Redouane'},
+  {country:'Marruecos',pos:'DF',name:'Salah Eddine Anass'},
+  // NETHERLANDS
+  {country:'Países Bajos',pos:'PO',name:'Verbruggen Bart'},
+  {country:'Países Bajos',pos:'DF',name:'Timber Jurrien'},
+  {country:'Países Bajos',pos:'MC',name:'De Roon Marten'},
+  {country:'Países Bajos',pos:'DF',name:'Van Dijk Virgil'},
+  {country:'Países Bajos',pos:'DF',name:'Ake Nathan'},
+  {country:'Países Bajos',pos:'DF',name:'Van Hecke Jan Paul'},
+  {country:'Países Bajos',pos:'MC',name:'Kluivert Justin'},
+  {country:'Países Bajos',pos:'MC',name:'Gravenberch Ryan'},
+  {country:'Países Bajos',pos:'DC',name:'Weghorst Wout'},
+  {country:'Países Bajos',pos:'DC',name:'Depay Memphis'},
+  {country:'Países Bajos',pos:'DC',name:'Gakpo Cody'},
+  {country:'Países Bajos',pos:'DF',name:'Wieffer Mats'},
+  {country:'Países Bajos',pos:'PO',name:'Roefs Robin'},
+  {country:'Países Bajos',pos:'MC',name:'Reijnders Tijjani'},
+  {country:'Países Bajos',pos:'DF',name:'Van De Ven Micky'},
+  {country:'Países Bajos',pos:'MC',name:'Til Guus'},
+  {country:'Países Bajos',pos:'DC',name:'Lang Noa'},
+  {country:'Países Bajos',pos:'DC',name:'Malen Donyell'},
+  {country:'Países Bajos',pos:'DC',name:'Brobbey Brian'},
+  {country:'Países Bajos',pos:'MC',name:'Koopmeiners Teun'},
+  {country:'Países Bajos',pos:'MC',name:'De Jong Frenkie'},
+  {country:'Países Bajos',pos:'DF',name:'Dumfries Denzel'},
+  {country:'Países Bajos',pos:'PO',name:'Flekken Mark'},
+  {country:'Países Bajos',pos:'DC',name:'Summerville Crysencio'},
+  {country:'Países Bajos',pos:'DF',name:'Hato Jorrel'},
+  {country:'Países Bajos',pos:'MC',name:'Timber Quinten'},
+  // NEW ZEALAND
+  {country:'Nueva Zelanda',pos:'PO',name:'Crocombe Max'},
+  {country:'Nueva Zelanda',pos:'DF',name:'Payne Tim'},
+  {country:'Nueva Zelanda',pos:'DF',name:'De Vries Francis'},
+  {country:'Nueva Zelanda',pos:'DF',name:'Bindon Tyler'},
+  {country:'Nueva Zelanda',pos:'DF',name:'Boxall Michael'},
+  {country:'Nueva Zelanda',pos:'MC',name:'Bell Joe'},
+  {country:'Nueva Zelanda',pos:'MC',name:'Garbett Matthew'},
+  {country:'Nueva Zelanda',pos:'MC',name:'Stamenic Marko'},
+  {country:'Nueva Zelanda',pos:'DC',name:'Wood Chris'},
+  {country:'Nueva Zelanda',pos:'MC',name:'Singh Sarpreet'},
+  {country:'Nueva Zelanda',pos:'MC',name:'Just Elijah'},
+  {country:'Nueva Zelanda',pos:'PO',name:'Paulsen Alex'},
+  {country:'Nueva Zelanda',pos:'DF',name:'Cacace Liberato'},
+  {country:'Nueva Zelanda',pos:'MC',name:'Rufer Alex'},
+  {country:'Nueva Zelanda',pos:'DF',name:'Pijnaker Nando'},
+  {country:'Nueva Zelanda',pos:'DF',name:'Surman Finn'},
+  {country:'Nueva Zelanda',pos:'DC',name:'Barbarouses Kosta'},
+  {country:'Nueva Zelanda',pos:'DC',name:'Waine Ben'},
+  {country:'Nueva Zelanda',pos:'MC',name:'Old Ben'},
+  {country:'Nueva Zelanda',pos:'MC',name:'McCowatt Callum'},
+  {country:'Nueva Zelanda',pos:'DC',name:'Randall Jesse'},
+  {country:'Nueva Zelanda',pos:'PO',name:'Woud Michael'},
+  {country:'Nueva Zelanda',pos:'MC',name:'Thomas Ryan'},
+  {country:'Nueva Zelanda',pos:'DF',name:'Elliot Callan'},
+  {country:'Nueva Zelanda',pos:'MC',name:'Bayliss Lachlan'},
+  {country:'Nueva Zelanda',pos:'DF',name:'Smith Tommy'},
+  // NORWAY
+  {country:'Noruega',pos:'PO',name:'Nyland Orjan'},
+  {country:'Noruega',pos:'MC',name:'Thorsby Morten'},
+  {country:'Noruega',pos:'DF',name:'Ajer Kristoffer'},
+  {country:'Noruega',pos:'DF',name:'Ostigard Leo'},
+  {country:'Noruega',pos:'DF',name:'Moller Wolfe David'},
+  {country:'Noruega',pos:'MC',name:'Berg Patrick'},
+  {country:'Noruega',pos:'DC',name:'Sorloth Alexander'},
+  {country:'Noruega',pos:'MC',name:'Berge Sander'},
+  {country:'Noruega',pos:'DC',name:'Haaland Erling'},
+  {country:'Noruega',pos:'MC',name:'Odegaard Martin'},
+  {country:'Noruega',pos:'DC',name:'Strand Larsen Jorgen'},
+  {country:'Noruega',pos:'PO',name:'Tangvik Sander'},
+  {country:'Noruega',pos:'PO',name:'Selvik Egil'},
+  {country:'Noruega',pos:'MC',name:'Aursnes Fredrik'},
+  {country:'Noruega',pos:'DF',name:'Bjorkan Fredrik Andre'},
+  {country:'Noruega',pos:'DF',name:'Holmgren Pedersen Marcus'},
+  {country:'Noruega',pos:'DF',name:'Heggem Torbjorn'},
+  {country:'Noruega',pos:'MC',name:'Thorstvedt Kristian'},
+  {country:'Noruega',pos:'MC',name:'Aasgaard Thelo'},
+  {country:'Noruega',pos:'DC',name:'Nusa Antonio'},
+  {country:'Noruega',pos:'MC',name:'Schjelderup Andreas'},
+  {country:'Noruega',pos:'MC',name:'Bobb Oscar'},
+  {country:'Noruega',pos:'MC',name:'Hauge Jens Petter'},
+  {country:'Noruega',pos:'DF',name:'Langas Sondre'},
+  {country:'Noruega',pos:'DF',name:'Falchener Henrik'},
+  {country:'Noruega',pos:'DC',name:'Ryerson Julian'},
+  // PANAMA
+  {country:'Panamá',pos:'PO',name:'Mejia Luis'},
+  {country:'Panamá',pos:'DF',name:'Blackman Cesar'},
+  {country:'Panamá',pos:'DF',name:'Cordoba Jose'},
+  {country:'Panamá',pos:'DF',name:'Escobar Fidel'},
+  {country:'Panamá',pos:'DF',name:'Farina Edgardo'},
+  {country:'Panamá',pos:'MC',name:'Martinez Cristian'},
+  {country:'Panamá',pos:'MC',name:'Rodriguez Jose Luis'},
+  {country:'Panamá',pos:'MC',name:'Carrasquilla Adalberto'},
+  {country:'Panamá',pos:'DC',name:'Rodriguez Tomas'},
+  {country:'Panamá',pos:'MC',name:'Diaz Ismael'},
+  {country:'Panamá',pos:'MC',name:'Barcenas Edgar Yoel'},
+  {country:'Panamá',pos:'PO',name:'Samudio Cesar'},
+  {country:'Panamá',pos:'DF',name:'Ramos Jiovany'},
+  {country:'Panamá',pos:'DF',name:'Harvey Carlos'},
+  {country:'Panamá',pos:'DF',name:'Davis Eric'},
+  {country:'Panamá',pos:'DF',name:'Andrade Andres'},
+  {country:'Panamá',pos:'DC',name:'Fajardo Jose'},
+  {country:'Panamá',pos:'DC',name:'Waterman Cecilio'},
+  {country:'Panamá',pos:'MC',name:'Quintero Alberto'},
+  {country:'Panamá',pos:'MC',name:'Godoy Anibal'},
+  {country:'Panamá',pos:'MC',name:'Yanis Cesar'},
+  {country:'Panamá',pos:'PO',name:'Mosquera Orlando'},
+  {country:'Panamá',pos:'DF',name:'Murillo Amir'},
+  {country:'Panamá',pos:'DC',name:'Londono Azarias'},
+  {country:'Panamá',pos:'DF',name:'Miller Roderick'},
+  {country:'Panamá',pos:'DF',name:'Gutierrez Jorge'},
+  // PARAGUAY
+  {country:'Paraguay',pos:'PO',name:'Fernandez Gatito'},
+  {country:'Paraguay',pos:'DF',name:'Velazquez Gustavo'},
+  {country:'Paraguay',pos:'DF',name:'Alderete Omar'},
+  {country:'Paraguay',pos:'DF',name:'Caceres Juan Jose'},
+  {country:'Paraguay',pos:'DF',name:'Balbuena Fabian'},
+  {country:'Paraguay',pos:'DF',name:'Alonso Junior'},
+  {country:'Paraguay',pos:'MC',name:'Sosa Ramon'},
+  {country:'Paraguay',pos:'MC',name:'Gomez Diego'},
+  {country:'Paraguay',pos:'DC',name:'Sanabria Antonio'},
+  {country:'Paraguay',pos:'MC',name:'Almiron Miguel'},
+  {country:'Paraguay',pos:'MC',name:'Mauricio'},
+  {country:'Paraguay',pos:'PO',name:'Gill Orlando'},
+  {country:'Paraguay',pos:'DF',name:'Canale Jose'},
+  {country:'Paraguay',pos:'MC',name:'Cubas Andres'},
+  {country:'Paraguay',pos:'DF',name:'Gomez Gustavo'},
+  {country:'Paraguay',pos:'MC',name:'Bobadilla Damian'},
+  {country:'Paraguay',pos:'DC',name:'Romero Gamarra Alejandro'},
+  {country:'Paraguay',pos:'DC',name:'Arce Alex'},
+  {country:'Paraguay',pos:'DC',name:'Enciso Julio'},
+  {country:'Paraguay',pos:'MC',name:'Ojeda Braian'},
+  {country:'Paraguay',pos:'DC',name:'Avalos Gabriel'},
+  {country:'Paraguay',pos:'PO',name:'Olveira Gaston'},
+  {country:'Paraguay',pos:'MC',name:'Galarza Matias'},
+  {country:'Paraguay',pos:'MC',name:'Caballero Gustavo'},
+  {country:'Paraguay',pos:'DC',name:'Pitta Isidro'},
+  {country:'Paraguay',pos:'DF',name:'Maidana Alexandro'},
+  // PORTUGAL
+  {country:'Portugal',pos:'PO',name:'Diogo Costa'},
+  {country:'Portugal',pos:'DF',name:'Nelson Semedo'},
+  {country:'Portugal',pos:'DF',name:'Ruben Dias'},
+  {country:'Portugal',pos:'DF',name:'Tomas Araujo'},
+  {country:'Portugal',pos:'DF',name:'Diogo Dalot'},
+  {country:'Portugal',pos:'MC',name:'Matheus Nunes'},
+  {country:'Portugal',pos:'DC',name:'Cristiano Ronaldo'},
+  {country:'Portugal',pos:'MC',name:'Bruno Fernandes'},
+  {country:'Portugal',pos:'DC',name:'Goncalo Ramos'},
+  {country:'Portugal',pos:'MC',name:'Bernardo Silva'},
+  {country:'Portugal',pos:'DC',name:'Joao Felix'},
+  {country:'Portugal',pos:'PO',name:'Jose Sa'},
+  {country:'Portugal',pos:'DF',name:'Renato Veiga'},
+  {country:'Portugal',pos:'DF',name:'Goncalo Inacio'},
+  {country:'Portugal',pos:'MC',name:'Joao Neves'},
+  {country:'Portugal',pos:'DC',name:'Francisco Trincao'},
+  {country:'Portugal',pos:'DC',name:'Rafael Leao'},
+  {country:'Portugal',pos:'DC',name:'Pedro Neto'},
+  {country:'Portugal',pos:'DC',name:'Goncalo Guedes'},
+  {country:'Portugal',pos:'DF',name:'Joao Cancelo'},
+  {country:'Portugal',pos:'MC',name:'Ruben Neves'},
+  {country:'Portugal',pos:'PO',name:'Rui Silva'},
+  {country:'Portugal',pos:'MC',name:'Vitinha'},
+  {country:'Portugal',pos:'DF',name:'Samu Costa'},
+  {country:'Portugal',pos:'DF',name:'Nuno Mendes'},
+  {country:'Portugal',pos:'DC',name:'Francisco Conceicao'},
+  // QATAR
+  {country:'Catar',pos:'PO',name:'Mahmoud Abunada'},
+  {country:'Catar',pos:'DF',name:'Pedro Miguel'},
+  {country:'Catar',pos:'DF',name:'Lucas Mendes'},
+  {country:'Catar',pos:'DF',name:'Issa Laye'},
+  {country:'Catar',pos:'DF',name:'Jassem Gaber'},
+  {country:'Catar',pos:'MC',name:'Abdulaziz Hatem'},
+  {country:'Catar',pos:'DC',name:'Ahmed Alaaeldin'},
+  {country:'Catar',pos:'DC',name:'Edmilson Junior'},
+  {country:'Catar',pos:'DC',name:'Mohammed Muntari'},
+  {country:'Catar',pos:'DC',name:'Hassan Alhaydos'},
+  {country:'Catar',pos:'DC',name:'Akram Afif'},
+  {country:'Catar',pos:'MC',name:'Karim Boudiaf'},
+  {country:'Catar',pos:'DF',name:'Ayoub Aloui'},
+  {country:'Catar',pos:'DF',name:'Homam Ahmed'},
+  {country:'Catar',pos:'DC',name:'Yusuf Abdurisag'},
+  {country:'Catar',pos:'DF',name:'Boualem Khoukhi'},
+  {country:'Catar',pos:'MC',name:'Ahmed Alganehi'},
+  {country:'Catar',pos:'DF',name:'Sultan Albrake'},
+  {country:'Catar',pos:'DC',name:'Almoez Ali'},
+  {country:'Catar',pos:'MC',name:'Ahmed Fathy'},
+  {country:'Catar',pos:'PO',name:'Salah Zakaria'},
+  {country:'Catar',pos:'PO',name:'Meshaal Barsham'},
+  {country:'Catar',pos:'MC',name:'Assim Madibo'},
+  {country:'Catar',pos:'DC',name:'Tahsin Jamshid'},
+  {country:'Catar',pos:'DF',name:'Alhashmi Alhussein'},
+  {country:'Catar',pos:'DC',name:'Mohamed Manai'},
+  // SAUDI ARABIA
+  {country:'Arabia Saudí',pos:'PO',name:'Nawaf Alaqidi'},
+  {country:'Arabia Saudí',pos:'DF',name:'Ali Majrashi'},
+  {country:'Arabia Saudí',pos:'DF',name:'Ali Lajami'},
+  {country:'Arabia Saudí',pos:'DF',name:'Abdulelah Alamri'},
+  {country:'Arabia Saudí',pos:'DF',name:'Hassan Altambakti'},
+  {country:'Arabia Saudí',pos:'MC',name:'Nasser Aldawsari'},
+  {country:'Arabia Saudí',pos:'MC',name:'Musab Aljuwayr'},
+  {country:'Arabia Saudí',pos:'DC',name:'Aiman Yahya'},
+  {country:'Arabia Saudí',pos:'DC',name:'Feras Albrikan'},
+  {country:'Arabia Saudí',pos:'DC',name:'Salem Aldawsari'},
+  {country:'Arabia Saudí',pos:'DC',name:'Saleh Alshehri'},
+  {country:'Arabia Saudí',pos:'DF',name:'Saud Abdulhamid'},
+  {country:'Arabia Saudí',pos:'DF',name:'Nawaf Bu Washl'},
+  {country:'Arabia Saudí',pos:'DF',name:'Hassan Kadish'},
+  {country:'Arabia Saudí',pos:'MC',name:'Abdullah Alkhaibari'},
+  {country:'Arabia Saudí',pos:'MC',name:'Ziyad Aljohani'},
+  {country:'Arabia Saudí',pos:'DC',name:'Khalid Alghannam'},
+  {country:'Arabia Saudí',pos:'MC',name:'Ala Alhajji'},
+  {country:'Arabia Saudí',pos:'DC',name:'Abdullah Alhamddan'},
+  {country:'Arabia Saudí',pos:'DC',name:'Sultan Mandash'},
+  {country:'Arabia Saudí',pos:'PO',name:'Mohammed Alowais'},
+  {country:'Arabia Saudí',pos:'PO',name:'Ahmed Alkassar'},
+  {country:'Arabia Saudí',pos:'MC',name:'Mohamed Kanno'},
+  {country:'Arabia Saudí',pos:'DF',name:'Moteb Alharbi'},
+  {country:'Arabia Saudí',pos:'DF',name:'Jehad Thikri'},
+  {country:'Arabia Saudí',pos:'DF',name:'Mohammed Abu Alshamat'},
+  // SCOTLAND
+  {country:'Escocia',pos:'PO',name:'Gunn Angus'},
+  {country:'Escocia',pos:'DF',name:'Hickey Aaron'},
+  {country:'Escocia',pos:'DF',name:'Robertson Andy'},
+  {country:'Escocia',pos:'MC',name:'McTominay Scott'},
+  {country:'Escocia',pos:'DF',name:'Hanley Grant'},
+  {country:'Escocia',pos:'DF',name:'Tierney Kieran'},
+  {country:'Escocia',pos:'MC',name:'McGinn John'},
+  {country:'Escocia',pos:'MC',name:'Fletcher Tyler'},
+  {country:'Escocia',pos:'DC',name:'Dykes Lyndon'},
+  {country:'Escocia',pos:'DC',name:'Adams Che'},
+  {country:'Escocia',pos:'MC',name:'Christie Ryan'},
+  {country:'Escocia',pos:'PO',name:'Kelly Liam'},
+  {country:'Escocia',pos:'DF',name:'Hendry Jack'},
+  {country:'Escocia',pos:'DC',name:'Stewart Ross'},
+  {country:'Escocia',pos:'DF',name:'Souttar John'},
+  {country:'Escocia',pos:'DF',name:'Hyam Dominic'},
+  {country:'Escocia',pos:'DC',name:'Gannon-Doak Ben'},
+  {country:'Escocia',pos:'DC',name:'Hirst George'},
+  {country:'Escocia',pos:'MC',name:'Ferguson Lewis'},
+  {country:'Escocia',pos:'DC',name:'Shankland Lawrence'},
+  {country:'Escocia',pos:'PO',name:'Gordon Craig'},
+  {country:'Escocia',pos:'DF',name:'Patterson Nathan'},
+  {country:'Escocia',pos:'MC',name:'McLean Kenny'},
+  {country:'Escocia',pos:'DF',name:'Ralston Anthony'},
+  {country:'Escocia',pos:'DC',name:'Curtis Findlay'},
+  {country:'Escocia',pos:'DF',name:'McKenna Scott'},
+  // SENEGAL
+  {country:'Senegal',pos:'PO',name:'Diouf Yehvann'},
+  {country:'Senegal',pos:'DF',name:'Sarr Mamadou'},
+  {country:'Senegal',pos:'DF',name:'Koulibaly Kalidou'},
+  {country:'Senegal',pos:'DF',name:'Seck Abdoulaye'},
+  {country:'Senegal',pos:'MC',name:'Gueye Idrissa Gana'},
+  {country:'Senegal',pos:'MC',name:'Ciss Pathe'},
+  {country:'Senegal',pos:'DC',name:'Diao Assane'},
+  {country:'Senegal',pos:'MC',name:'Camara Lamine'},
+  {country:'Senegal',pos:'DC',name:'Dieng Bamba'},
+  {country:'Senegal',pos:'DC',name:'Mane Sadio'},
+  {country:'Senegal',pos:'DC',name:'Jackson Nicolas'},
+  {country:'Senegal',pos:'DC',name:'Ndiaye Cherif'},
+  {country:'Senegal',pos:'DC',name:'Ndiaye Iliman'},
+  {country:'Senegal',pos:'DF',name:'Jakobs Ismail'},
+  {country:'Senegal',pos:'DF',name:'Diatta Krepin'},
+  {country:'Senegal',pos:'PO',name:'Mendy Edouard'},
+  {country:'Senegal',pos:'MC',name:'Sarr Pape Matar'},
+  {country:'Senegal',pos:'DC',name:'Sarr Ismaila'},
+  {country:'Senegal',pos:'DF',name:'Niakhate Moussa'},
+  {country:'Senegal',pos:'DC',name:'Mbaye Ibrahim'},
+  {country:'Senegal',pos:'MC',name:'Diarra Habib'},
+  {country:'Senegal',pos:'MC',name:'Ndiaye Bara Sapoko'},
+  {country:'Senegal',pos:'PO',name:'Diaw Mory'},
+  {country:'Senegal',pos:'DF',name:'Mendy Antoine'},
+  {country:'Senegal',pos:'DF',name:'Diouf El Hadji Malick'},
+  {country:'Senegal',pos:'MC',name:'Gueye Pape'},
+  // SOUTH AFRICA
+  {country:'Sudáfrica',pos:'PO',name:'Williams Ronwen'},
+  {country:'Sudáfrica',pos:'DF',name:'Matuludi Thabang'},
+  {country:'Sudáfrica',pos:'DF',name:'Ndamane Khulumani'},
+  {country:'Sudáfrica',pos:'MC',name:'Mokoena Teboho'},
+  {country:'Sudáfrica',pos:'MC',name:'Mbatha Thalente'},
+  {country:'Sudáfrica',pos:'DF',name:'Modiba Aubrey'},
+  {country:'Sudáfrica',pos:'DC',name:'Appollis Oswin'},
+  {country:'Sudáfrica',pos:'DC',name:'Moremi Tshepang'},
+  {country:'Sudáfrica',pos:'DC',name:'Foster Lyle'},
+  {country:'Sudáfrica',pos:'DC',name:'Mofokeng Relebohile'},
+  {country:'Sudáfrica',pos:'MC',name:'Zwane Themba'},
+  {country:'Sudáfrica',pos:'DC',name:'Maseko Thapelo'},
+  {country:'Sudáfrica',pos:'MC',name:'Sithole Sphephelo'},
+  {country:'Sudáfrica',pos:'DF',name:'Mbokazi Mbekezeli'},
+  {country:'Sudáfrica',pos:'DC',name:'Rayners Iqraam'},
+  {country:'Sudáfrica',pos:'PO',name:'Chaine Sipho'},
+  {country:'Sudáfrica',pos:'DC',name:'Makgopa Evidence'},
+  {country:'Sudáfrica',pos:'DF',name:'Kabini Samukele'},
+  {country:'Sudáfrica',pos:'DF',name:'Sibisi Nkosinathi'},
+  {country:'Sudáfrica',pos:'DF',name:'Mudau Khuliso'},
+  {country:'Sudáfrica',pos:'DF',name:'Okon Ime'},
+  {country:'Sudáfrica',pos:'PO',name:'Goss Ricardo'},
+  {country:'Sudáfrica',pos:'MC',name:'Adams Jayden'},
+  {country:'Sudáfrica',pos:'DF',name:'Makhanya Olwethu'},
+  {country:'Sudáfrica',pos:'DC',name:'Sebelebele Kamogelo'},
+  {country:'Sudáfrica',pos:'DF',name:'Cross Bradley'},
+  // SPAIN
+  {country:'España',pos:'PO',name:'Raya David'},
+  {country:'España',pos:'DF',name:'Pubill Marc'},
+  {country:'España',pos:'DF',name:'Grimaldo Alex'},
+  {country:'España',pos:'DF',name:'Garcia Eric'},
+  {country:'España',pos:'DF',name:'Llorente Marcos'},
+  {country:'España',pos:'MC',name:'Merino Mikel'},
+  {country:'España',pos:'DC',name:'Torres Ferran'},
+  {country:'España',pos:'MC',name:'Ruiz Fabian'},
+  {country:'España',pos:'MC',name:'Gavi'},
+  {country:'España',pos:'DC',name:'Olmo Dani'},
+  {country:'España',pos:'DC',name:'Pino Yeremy'},
+  {country:'España',pos:'DF',name:'Porro Pedro'},
+  {country:'España',pos:'PO',name:'Garcia Joan'},
+  {country:'España',pos:'DF',name:'Laporte Aymeric'},
+  {country:'España',pos:'MC',name:'Baena Alex'},
+  {country:'España',pos:'MC',name:'Rodri'},
+  {country:'España',pos:'DC',name:'Williams Nico'},
+  {country:'España',pos:'MC',name:'Zubimendi Martin'},
+  {country:'España',pos:'DC',name:'Yamal Lamine'},
+  {country:'España',pos:'MC',name:'Pedri'},
+  {country:'España',pos:'DC',name:'Oyarzabal Mikel'},
+  {country:'España',pos:'DF',name:'Cubarsi Pau'},
+  {country:'España',pos:'PO',name:'Simon Unai'},
+  {country:'España',pos:'DF',name:'Cucurella Marc'},
+  {country:'España',pos:'DC',name:'Munoz Victor'},
+  {country:'España',pos:'DC',name:'Iglesias Borja'},
+  // SWEDEN
+  {country:'Suecia',pos:'PO',name:'Widell Zetterstrom Jacob'},
+  {country:'Suecia',pos:'DF',name:'Lagerbielke Gustaf'},
+  {country:'Suecia',pos:'DF',name:'Lindelof Victor'},
+  {country:'Suecia',pos:'DF',name:'Hien Isak'},
+  {country:'Suecia',pos:'DF',name:'Gudmundsson Gabriel'},
+  {country:'Suecia',pos:'DF',name:'Johansson Herman'},
+  {country:'Suecia',pos:'MC',name:'Bergvall Lucas'},
+  {country:'Suecia',pos:'DF',name:'Svensson Daniel'},
+  {country:'Suecia',pos:'DC',name:'Isak Alexander'},
+  {country:'Suecia',pos:'MC',name:'Nygren Benjamin'},
+  {country:'Suecia',pos:'DC',name:'Elanga Anthony'},
+  {country:'Suecia',pos:'PO',name:'Johansson Viktor'},
+  {country:'Suecia',pos:'MC',name:'Sema Ken'},
+  {country:'Suecia',pos:'DF',name:'Ekdal Hjalmar'},
+  {country:'Suecia',pos:'DF',name:'Starfelt Carl'},
+  {country:'Suecia',pos:'MC',name:'Karlstrom Jesper'},
+  {country:'Suecia',pos:'DC',name:'Gyokeres Viktor'},
+  {country:'Suecia',pos:'MC',name:'Ayari Yasin'},
+  {country:'Suecia',pos:'MC',name:'Svanberg Mattias'},
+  {country:'Suecia',pos:'DF',name:'Smith Eric'},
+  {country:'Suecia',pos:'DF',name:'Bernhardsson Alexander'},
+  {country:'Suecia',pos:'MC',name:'Zeneli Besfort'},
+  {country:'Suecia',pos:'PO',name:'Nordfeldt Kristoffer'},
+  {country:'Suecia',pos:'DF',name:'Stroud Elliot'},
+  {country:'Suecia',pos:'DC',name:'Nilsson Gustaf'},
+  {country:'Suecia',pos:'DC',name:'Ali Taha'},
+  // SWITZERLAND
+  {country:'Suiza',pos:'PO',name:'Kobel Gregor'},
+  {country:'Suiza',pos:'DF',name:'Muheim Miro'},
+  {country:'Suiza',pos:'DF',name:'Widmer Silvan'},
+  {country:'Suiza',pos:'DF',name:'Elvedi Nico'},
+  {country:'Suiza',pos:'DF',name:'Akanji Manuel'},
+  {country:'Suiza',pos:'MC',name:'Zakaria Denis'},
+  {country:'Suiza',pos:'DC',name:'Embolo Breel'},
+  {country:'Suiza',pos:'MC',name:'Freuler Remo'},
+  {country:'Suiza',pos:'MC',name:'Manzambi Johan'},
+  {country:'Suiza',pos:'MC',name:'Xhaka Granit'},
+  {country:'Suiza',pos:'DC',name:'Ndoye Dan'},
+  {country:'Suiza',pos:'PO',name:'Mvogo Yvon'},
+  {country:'Suiza',pos:'DF',name:'Rodriguez Ricardo'},
+  {country:'Suiza',pos:'MC',name:'Jashari Ardon'},
+  {country:'Suiza',pos:'MC',name:'Sow Djibril'},
+  {country:'Suiza',pos:'DC',name:'Fassnacht Christian'},
+  {country:'Suiza',pos:'DC',name:'Vargas Ruben'},
+  {country:'Suiza',pos:'DF',name:'Coemert Eray'},
+  {country:'Suiza',pos:'DC',name:'Okafor Noah'},
+  {country:'Suiza',pos:'MC',name:'Aebischer Michel'},
+  {country:'Suiza',pos:'PO',name:'Keller Marvin'},
+  {country:'Suiza',pos:'MC',name:'Rieder Fabian'},
+  {country:'Suiza',pos:'DC',name:'Amdouni Zeki'},
+  {country:'Suiza',pos:'DF',name:'Amenda Aurele'},
+  {country:'Suiza',pos:'DF',name:'Jaquez Luca'},
+  {country:'Suiza',pos:'DC',name:'Itten Cedric'},
+  // TUNISIA
+  {country:'Túnez',pos:'PO',name:'Chamakh Mouhib'},
+  {country:'Túnez',pos:'DF',name:'Abdi Ali'},
+  {country:'Túnez',pos:'DF',name:'Talbi Montassar'},
+  {country:'Túnez',pos:'DF',name:'Rekik Omar'},
+  {country:'Túnez',pos:'DF',name:'Arous Adam'},
+  {country:'Túnez',pos:'DF',name:'Bronn Dylan'},
+  {country:'Túnez',pos:'DC',name:'Achouri Elias'},
+  {country:'Túnez',pos:'DC',name:'Saad Elias'},
+  {country:'Túnez',pos:'DC',name:'Mastouri Hazem'},
+  {country:'Túnez',pos:'MC',name:'Mejbri Hannibal'},
+  {country:'Túnez',pos:'MC',name:'Gharbi Ismael'},
+  {country:'Túnez',pos:'DF',name:'Ben Ouanes Mortadha'},
+  {country:'Túnez',pos:'MC',name:'Khedira Rani'},
+  {country:'Túnez',pos:'MC',name:'Ayari Khalil'},
+  {country:'Túnez',pos:'MC',name:'Hadj Mahmoud Mohamed'},
+  {country:'Túnez',pos:'PO',name:'Dahmen Aymen'},
+  {country:'Túnez',pos:'MC',name:'Skhiri Ellyes'},
+  {country:'Túnez',pos:'DC',name:'Elloumi Rayan'},
+  {country:'Túnez',pos:'DC',name:'Chaouat Firas'},
+  {country:'Túnez',pos:'DF',name:'Valery Yan'},
+  {country:'Túnez',pos:'DF',name:'Ben Hmida Mohamed Amine'},
+  {country:'Túnez',pos:'PO',name:'Ben Hessen Sabri'},
+  {country:'Túnez',pos:'DF',name:'Neffati Moutaz'},
+  {country:'Túnez',pos:'DF',name:'Chikhaoui Raed'},
+  {country:'Túnez',pos:'MC',name:'Slimane Anis'},
+  {country:'Túnez',pos:'MC',name:'Tounekti Sebastian'},
+  // TURKEY
+  {country:'Turquía',pos:'PO',name:'Gunok Mert'},
+  {country:'Turquía',pos:'DF',name:'Celik Zeki'},
+  {country:'Turquía',pos:'DF',name:'Demiral Merih'},
+  {country:'Turquía',pos:'DF',name:'Soyuncu Caglar'},
+  {country:'Turquía',pos:'MC',name:'Ozcan Salih'},
+  {country:'Turquía',pos:'MC',name:'Kokcu Orkun'},
+  {country:'Turquía',pos:'DC',name:'Akturkoglu Kerem'},
+  {country:'Turquía',pos:'DC',name:'Guler Arda'},
+  {country:'Turquía',pos:'DC',name:'Gul Deniz'},
+  {country:'Turquía',pos:'MC',name:'Calhanoglu Hakan'},
+  {country:'Turquía',pos:'DC',name:'Yildiz Kenan'},
+  {country:'Turquía',pos:'PO',name:'Bayindir Altay'},
+  {country:'Turquía',pos:'DF',name:'Elmali Eren'},
+  {country:'Turquía',pos:'DF',name:'Bardakci Abdulkerim'},
+  {country:'Turquía',pos:'DF',name:'Kabak Ozan'},
+  {country:'Turquía',pos:'MC',name:'Yuksek Ismail'},
+  {country:'Turquía',pos:'DC',name:'Kahveci Irfan Can'},
+  {country:'Turquía',pos:'DF',name:'Muldur Mert'},
+  {country:'Turquía',pos:'DC',name:'Akgun Yunus'},
+  {country:'Turquía',pos:'DF',name:'Kadioglu Ferdi'},
+  {country:'Turquía',pos:'DC',name:'Yilmaz Baris Alper'},
+  {country:'Turquía',pos:'MC',name:'Ayhan Kaan'},
+  {country:'Turquía',pos:'PO',name:'Cakir Ugurcan'},
+  {country:'Turquía',pos:'DC',name:'Aydin Oguz'},
+  {country:'Turquía',pos:'DF',name:'Akaydin Samet'},
+  {country:'Turquía',pos:'DC',name:'Uzun Can'},
+  // URUGUAY
+  {country:'Uruguay',pos:'PO',name:'Rochet Sergio'},
+  {country:'Uruguay',pos:'DF',name:'Gimenez Jose Maria'},
+  {country:'Uruguay',pos:'DF',name:'Caceres Sebastian'},
+  {country:'Uruguay',pos:'DF',name:'Araujo Ronald'},
+  {country:'Uruguay',pos:'MC',name:'Ugarte Manuel'},
+  {country:'Uruguay',pos:'MC',name:'Bentancur Rodrigo'},
+  {country:'Uruguay',pos:'MC',name:'De La Cruz Nicolas'},
+  {country:'Uruguay',pos:'MC',name:'Valverde Federico'},
+  {country:'Uruguay',pos:'DC',name:'Nunez Darwin'},
+  {country:'Uruguay',pos:'MC',name:'De Arrascaeta Giorgian'},
+  {country:'Uruguay',pos:'DC',name:'Pellistri Facundo'},
+  {country:'Uruguay',pos:'PO',name:'Mele Santiago'},
+  {country:'Uruguay',pos:'DF',name:'Varela Guillermo'},
+  {country:'Uruguay',pos:'MC',name:'Canobbio Agustin'},
+  {country:'Uruguay',pos:'MC',name:'Martinez Emiliano'},
+  {country:'Uruguay',pos:'DF',name:'Olivera Mathias'},
+  {country:'Uruguay',pos:'DF',name:'Vina Matias'},
+  {country:'Uruguay',pos:'DC',name:'Rodriguez Brian Paul'},
+  {country:'Uruguay',pos:'DC',name:'Aguirre Rodrigo'},
+  {country:'Uruguay',pos:'MC',name:'Araujo Maxi'},
+  {country:'Uruguay',pos:'DC',name:'Vinas Federico'},
+  {country:'Uruguay',pos:'MC',name:'Piquerez Joaquin'},
+  {country:'Uruguay',pos:'PO',name:'Muslera Fernando'},
+  {country:'Uruguay',pos:'DF',name:'Bueno Santiago'},
+  {country:'Uruguay',pos:'MC',name:'Sanabria Juan Manuel'},
+  {country:'Uruguay',pos:'MC',name:'Zalazar Rodrigo'},
+  // USA
+  {country:'EE.UU.',pos:'PO',name:'Turner Matt'},
+  {country:'EE.UU.',pos:'DF',name:'Dest Sergino'},
+  {country:'EE.UU.',pos:'DF',name:'Richards Chris'},
+  {country:'EE.UU.',pos:'MC',name:'Adams Tyler'},
+  {country:'EE.UU.',pos:'DF',name:'Robinson Antonee'},
+  {country:'EE.UU.',pos:'DF',name:'Trusty Auston'},
+  {country:'EE.UU.',pos:'MC',name:'Reyna Giovanni'},
+  {country:'EE.UU.',pos:'MC',name:'McKennie Weston'},
+  {country:'EE.UU.',pos:'DC',name:'Pepi Ricardo'},
+  {country:'EE.UU.',pos:'DC',name:'Pulisic Christian'},
+  {country:'EE.UU.',pos:'DC',name:'Aaronson Brenden'},
+  {country:'EE.UU.',pos:'DF',name:'Robinson Miles'},
+  {country:'EE.UU.',pos:'DF',name:'Ream Tim'},
+  {country:'EE.UU.',pos:'MC',name:'Berhalter Sebastian'},
+  {country:'EE.UU.',pos:'MC',name:'Roldan Cristian'},
+  {country:'EE.UU.',pos:'DF',name:'Freeman Alex'},
+  {country:'EE.UU.',pos:'MC',name:'Tillman Malik'},
+  {country:'EE.UU.',pos:'DF',name:'Arfsten Max'},
+  {country:'EE.UU.',pos:'DC',name:'Wright Haji'},
+  {country:'EE.UU.',pos:'DC',name:'Balogun Folarin'},
+  {country:'EE.UU.',pos:'DC',name:'Weah Timothy'},
+  {country:'EE.UU.',pos:'DF',name:'McKenzie Mark'},
+  {country:'EE.UU.',pos:'DF',name:'Scally Joe'},
+  {country:'EE.UU.',pos:'PO',name:'Freese Matt'},
+  {country:'EE.UU.',pos:'PO',name:'Brady Chris'},
+  {country:'EE.UU.',pos:'DC',name:'Zendejas Alex'},
+  // UZBEKISTAN
+  {country:'Uzbekistán',pos:'PO',name:'Yusupov Utkir'},
+  {country:'Uzbekistán',pos:'DF',name:'Khusanov Abdukodir'},
+  {country:'Uzbekistán',pos:'DF',name:'Alijonov Khojiakbar'},
+  {country:'Uzbekistán',pos:'DF',name:'Sayfiev Farrukh'},
+  {country:'Uzbekistán',pos:'DF',name:'Ashurmatov Rustam'},
+  {country:'Uzbekistán',pos:'MC',name:'Mozgovoy Akmal'},
+  {country:'Uzbekistán',pos:'MC',name:'Shukurov Otabek'},
+  {country:'Uzbekistán',pos:'MC',name:'Iskanderov Jamshid'},
+  {country:'Uzbekistán',pos:'MC',name:'Xamrobekov Odiljon'},
+  {country:'Uzbekistán',pos:'MC',name:'Masharipov Jaloliddin'},
+  {country:'Uzbekistán',pos:'MC',name:'Urunov Oston'},
+  {country:'Uzbekistán',pos:'PO',name:'Nematov Abduvohid'},
+  {country:'Uzbekistán',pos:'DF',name:'Nasrullaev Sherzod'},
+  {country:'Uzbekistán',pos:'DC',name:'Shomurodov Eldor'},
+  {country:'Uzbekistán',pos:'DF',name:'Eshmurodov Umar'},
+  {country:'Uzbekistán',pos:'PO',name:'Ergashev Botirali'},
+  {country:'Uzbekistán',pos:'MC',name:'Khamdamov Dostonbek'},
+  {country:'Uzbekistán',pos:'DF',name:'Abdullaev Abdulla'},
+  {country:'Uzbekistán',pos:'MC',name:'Ganiev Azizjon'},
+  {country:'Uzbekistán',pos:'DC',name:'Amonov Azizbek'},
+  {country:'Uzbekistán',pos:'DC',name:'Sergeev Igor'},
+  {country:'Uzbekistán',pos:'MC',name:'Fayzullaev Abbosbek'},
+  {country:'Uzbekistán',pos:'MC',name:'Esanov Sherzod'},
+  {country:'Uzbekistán',pos:'DF',name:'Karimov Behruzjon'},
+  {country:'Uzbekistán',pos:'DF',name:'Ulmasaliyev Avazbek'},
+  {country:'Uzbekistán',pos:'DF',name:'Urozov Jakhongir'},
+];
+
+// Add unique ids
+PLAYERS_RAW.forEach((p,i) => p.id = i);
+
+// ────────────────────────────────────────────────────────
+// STATE — stored in localStorage so it persists
+// ────────────────────────────────────────────────────────
+const STORAGE_KEY = 'mundial2026_draft_v3';
+
+function loadState() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return null;
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState() || {
+  draftOrder: [],   // array of user names for all picks (9*17 = 153 entries)
+  picks: [],        // [{pickNum, user, playerId}]
+  currentTurn: 0,   // index into draftOrder
+};
+
+// If no draft order yet, generate it on first visit
+function generateDraftOrder() {
+  if (state.draftOrder.length > 0) return;
+  // shuffle users for round 1
+  const shuffled = [...USERS].sort(() => Math.random() - 0.5);
+  const order = [];
+  for (let round = 0; round < MAX_PICKS; round++) {
+    const roundOrder = round % 2 === 0 ? [...shuffled] : [...shuffled].reverse();
+    order.push(...roundOrder);
+  }
+  state.draftOrder = order;
+  saveState();
+}
+
+// ────────────────────────────────────────────────────────
+// CURRENT USER
+// ────────────────────────────────────────────────────────
+let currentUser = null;
+
+// ────────────────────────────────────────────────────────
+// LOGIN SCREEN INIT
+// ────────────────────────────────────────────────────────
+function initLogin() {
+  const grid = document.getElementById('user-grid');
+  USERS.forEach(u => {
+    const btn = document.createElement('button');
+    btn.className = 'user-btn';
+    btn.textContent = u;
+    btn.onclick = () => {
+      document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('btn-enter').disabled = false;
+      currentUser = u;
+    };
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('btn-enter').onclick = () => {
+    if (!currentUser) return;
+    generateDraftOrder();
+    enterMainScreen();
+  };
+}
+
+function enterMainScreen() {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-main').classList.add('active');
+  document.getElementById('topbar-username').textContent = currentUser;
+  initPlantilla();
+  initDraft();
+}
+
+// ────────────────────────────────────────────────────────
+// TAB SWITCHING
+// ────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach((t,i) => {
+    t.classList.toggle('active', (i===0 && tab==='plantilla') || (i===1 && tab==='draft'));
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if (tab === 'plantilla') renderPlantilla(plantillaViewUser || currentUser);
+  if (tab === 'draft') renderDraft();
+}
+
+// ────────────────────────────────────────────────────────
+// PLANTILLA TAB
+// ────────────────────────────────────────────────────────
+let plantillaViewUser = null;
+
+function initPlantilla() {
+  plantillaViewUser = currentUser;
+  const sel = document.getElementById('plantilla-user-selector');
+  sel.innerHTML = '';
+  USERS.forEach(u => {
+    const btn = document.createElement('button');
+    btn.className = 'user-pill' + (u === currentUser ? ' active' : '');
+    btn.textContent = u.split(' ')[0];
+    btn.onclick = () => {
+      document.querySelectorAll('.user-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      plantillaViewUser = u;
+      renderPlantilla(u);
+    };
+    sel.appendChild(btn);
+  });
+  renderPlantilla(currentUser);
+}
+
+function renderPlantilla(user) {
+  const userPicks = state.picks
+    .filter(p => p.user === user)
+    .map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId));
+
+  document.getElementById('plantilla-count').textContent = `${userPicks.length} / ${MAX_PICKS} jugadores`;
+  document.querySelector('.plantilla-title').textContent =
+    user === currentUser ? 'Mi Plantilla' : `Plantilla de ${user.split(' ')[0]}`;
+
+  const grid = document.getElementById('plantilla-grid');
+  grid.innerHTML = '';
+
+  const posOrder = ['PO','DF','MC','DC'];
+  const sorted = [...userPicks].sort((a,b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos));
+
+  sorted.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'player-card';
+    card.innerHTML = `
+      <div class="player-card-pos ${p.pos}">${p.pos}</div>
+      <div class="player-card-name">${p.name}</div>
+      <div class="player-card-country">${p.country}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // empty slots
+  for (let i = sorted.length; i < MAX_PICKS; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'empty-slot';
+    slot.textContent = `VACANTE ${i+1}`;
+    grid.appendChild(slot);
+  }
+}
+
+// ────────────────────────────────────────────────────────
+// DRAFT TAB
+// ────────────────────────────────────────────────────────
+let posFilter = 'ALL';
+let pendingPlayer = null;
+
+function initDraft() {
+  renderDraft();
+}
+
+function renderDraft() {
+  renderDraftStatusBar();
+  renderDraftOrderRow();
+  renderDraftPlayerList();
+  renderDraftPicks();
+}
+
+function renderDraftStatusBar() {
+  const turn = state.currentTurn;
+  const total = state.draftOrder.length;
+  const isDone = turn >= total;
+  const currentPickUser = isDone ? '—' : state.draftOrder[turn];
+  const round = isDone ? MAX_PICKS : Math.floor(turn / USERS.length) + 1;
+  const myPicks = state.picks.filter(p => p.user === currentUser).length;
+
+  document.getElementById('ds-turn-num').textContent = isDone ? total : turn + 1;
+  document.getElementById('ds-round').textContent = round;
+  document.getElementById('ds-current-user').textContent = currentPickUser || '—';
+  document.getElementById('ds-my-picks').textContent = myPicks;
+
+  const ind = document.getElementById('draft-turn-indicator');
+  if (isDone) {
+    ind.textContent = 'DRAFT COMPLETO';
+    ind.className = 'draft-turn-indicator done';
+    document.getElementById('draft-complete-banner').classList.add('show');
+  } else if (currentPickUser === currentUser) {
+    ind.textContent = 'TU TURNO';
+    ind.className = 'draft-turn-indicator my-turn';
+  } else {
+    ind.textContent = 'ESPERANDO';
+    ind.className = 'draft-turn-indicator other-turn';
+  }
+}
+
+function renderDraftOrderRow() {
+  const row = document.getElementById('draft-order-row');
+  row.innerHTML = '';
+  const turn = state.currentTurn;
+  const total = state.draftOrder.length;
+  // show window: past 3, current, next 15
+  const start = Math.max(0, turn - 3);
+  const end = Math.min(total, turn + 16);
+  for (let i = start; i < end; i++) {
+    const chip = document.createElement('div');
+    const u = state.draftOrder[i];
+    chip.className = 'draft-order-chip' + (i === turn ? ' current' : '') + (i < turn ? ' done-chip' : '');
+    chip.textContent = `#${i+1} ${u.split(' ')[0]}`;
+    row.appendChild(chip);
+  }
+}
+
+function renderDraftPicks() {
+  const list = document.getElementById('draft-picks-list');
+  list.innerHTML = '';
+  const reversed = [...state.picks].reverse();
+  if (reversed.length === 0) {
+    list.innerHTML = '<div style="font-family:IBM Plex Mono,monospace;font-size:0.7rem;color:var(--muted)">Aún no hay picks</div>';
+    return;
+  }
+  reversed.forEach(pick => {
+    const player = PLAYERS_RAW.find(p => p.id === pick.playerId);
+    if (!player) return;
+    const row = document.createElement('div');
+    row.className = 'pick-row';
+    row.innerHTML = `
+      <span class="pick-num">#${pick.pickNum}</span>
+      <span class="pick-user">${pick.user.split(' ')[0]}</span>
+      <span class="pick-pos ${player.pos}">${player.pos}</span>
+      <span class="pick-player">${player.name}</span>
+      <span class="pick-country">${player.country}</span>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function renderDraftPlayerList() {
+  const list = document.getElementById('draft-player-list');
+  list.innerHTML = '';
+
+  const draftedIds = new Set(state.picks.map(p => p.playerId));
+  const myPicks = state.picks.filter(p => p.user === currentUser);
+  const myCountries = new Set(myPicks.map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId)?.country));
+  const searchTerm = (document.getElementById('search-input')?.value || '').toLowerCase();
+
+  const isMyTurn = state.currentTurn < state.draftOrder.length &&
+                   state.draftOrder[state.currentTurn] === currentUser;
+  const myPicksFull = myPicks.length >= MAX_PICKS;
+
+  // Group by country
+  const byCountry = {};
+  PLAYERS_RAW.forEach(p => {
+    if (!byCountry[p.country]) byCountry[p.country] = [];
+    byCountry[p.country].push(p);
+  });
+
+  const posOrderArr = ['PO','DF','MC','DC'];
+  const countries = Object.keys(byCountry).sort();
+
+  countries.forEach(country => {
+    const players = byCountry[country].sort((a,b) => posOrderArr.indexOf(a.pos) - posOrderArr.indexOf(b.pos));
+
+    // Filter
+    const filtered = players.filter(p => {
+      if (posFilter !== 'ALL' && p.pos !== posFilter) return false;
+      if (searchTerm && !p.name.toLowerCase().includes(searchTerm) && !country.toLowerCase().includes(searchTerm)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) return;
+
+    const isCountryDrafted = myCountries.has(country);
+    const allDrafted = players.every(p => draftedIds.has(p.id));
+
+    const section = document.createElement('div');
+    section.className = 'country-section';
+
+    const header = document.createElement('div');
+    header.className = 'country-header' + (isCountryDrafted ? ' has-drafted' : '');
+    const availCount = players.filter(p => !draftedIds.has(p.id)).length;
+    header.innerHTML = `<span>${country} <span style="color:var(--border)">(${availCount} disp.)</span></span><span class="chevron">▾</span>`;
+    header.onclick = () => {
+      section.classList.toggle('collapsed');
+      header.classList.toggle('collapsed');
+    };
+    section.appendChild(header);
+
+    const playersDiv = document.createElement('div');
+    playersDiv.className = 'country-players';
+
+    filtered.forEach(p => {
+      const isDrafted = draftedIds.has(p.id);
+      const isCountryBlock = !isDrafted && isCountryDrafted;
+      const row = document.createElement('div');
+      row.className = 'draft-player-row' + (isDrafted ? ' drafted' : '') + (isCountryBlock ? ' country-drafted' : '');
+      row.innerHTML = `
+        <span class="dpr-pos ${p.pos}">${p.pos}</span>
+        <span class="dpr-name">${p.name}</span>
+        ${isDrafted ? '<span class="dpr-badge">FICHADO</span>' : isCountryBlock ? '<span class="dpr-badge" style="color:#ff4444;border-color:#ff4444">PAÍS</span>' : ''}
+      `;
+
+      if (!isDrafted && !isCountryBlock && isMyTurn && !myPicksFull) {
+        row.onclick = () => openModal(p);
+      } else if (!isDrafted && !isCountryBlock && !isMyTurn) {
+        row.onclick = () => showToast('No es tu turno', 'error');
+      } else if (!isDrafted && isCountryBlock) {
+        row.onclick = () => showToast('Ya tienes un jugador de ' + country, 'error');
+      } else if (myPicksFull && !isDrafted) {
+        row.onclick = () => showToast('Ya tienes 17 jugadores', 'error');
+      }
+
+      playersDiv.appendChild(row);
+    });
+
+    section.appendChild(playersDiv);
+    list.appendChild(section);
+  });
+}
+
+function togglePosFilter(btn, pos) {
+  document.querySelectorAll('.filter-pos-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  posFilter = pos;
+  renderDraftPlayerList();
+}
+
+function filterPlayers() {
+  renderDraftPlayerList();
+}
+
+// ── MODAL ──
+function openModal(player) {
+  pendingPlayer = player;
+  const myPicks = state.picks.filter(p => p.user === currentUser).length;
+  document.getElementById('modal-body').innerHTML =
+    `¿Fichas a <strong>${player.name}</strong> (${player.pos}) de <strong>${player.country}</strong>?<br><br>
+    Picks: ${myPicks + 1} / ${MAX_PICKS}`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  pendingPlayer = null;
+}
+
+function confirmPick() {
+  if (!pendingPlayer) return;
+  closeModal();
+
+  const turn = state.currentTurn;
+  if (turn >= state.draftOrder.length) return;
+  if (state.draftOrder[turn] !== currentUser) return;
+
+  const draftedIds = new Set(state.picks.map(p => p.playerId));
+  const myPicks = state.picks.filter(p => p.user === currentUser);
+  const myCountries = new Set(myPicks.map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId)?.country));
+
+  if (draftedIds.has(pendingPlayer.id)) { showToast('Jugador ya fichado', 'error'); return; }
+  if (myCountries.has(pendingPlayer.country)) { showToast('Ya tienes un jugador de ese país', 'error'); return; }
+  if (myPicks.length >= MAX_PICKS) { showToast('Ya tienes 17 jugadores', 'error'); return; }
+
+  state.picks.push({ pickNum: turn + 1, user: currentUser, playerId: pendingPlayer.id });
+  state.currentTurn = turn + 1;
+  saveState();
+
+  showToast(`✓ ${pendingPlayer.name} fichado`, 'success');
+  renderDraft();
+  // Also refresh plantilla if visible
+  if (document.getElementById('tab-plantilla').classList.contains('active')) {
+    renderPlantilla(plantillaViewUser || currentUser);
+  }
+}
+
+// ── TOAST ──
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+// ────────────────────────────────────────────────────────
+// INIT
+// ────────────────────────────────────────────────────────
+initLogin();
+</script>
+</body>
+</html>
