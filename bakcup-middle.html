@@ -718,6 +718,126 @@
   }
 
   .draft-complete-banner.show { display:block; }
+
+  /* ── PITCH ── */
+  .plantilla-layout {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .pitch-wrapper {
+    flex-shrink: 0;
+    width: min(420px, 100%);
+  }
+
+  .pitch-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* slot circles on the pitch */
+  .pitch-slot {
+    cursor: default;
+    transition: opacity 0.2s;
+  }
+
+  .pitch-slot circle.slot-bg {
+    transition: fill 0.25s, stroke 0.25s;
+  }
+
+  .pitch-slot.filled circle.slot-bg {
+    fill: #1a1a26;
+    stroke-opacity: 1;
+  }
+
+  .pitch-slot.empty circle.slot-bg {
+    fill: rgba(10,10,20,0.55);
+    stroke-opacity: 0.55;
+  }
+
+  .pitch-slot text.slot-pos {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+
+  .pitch-slot text.slot-name {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 8.5px;
+    font-weight: 600;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    fill: #e8e8f0;
+  }
+
+  .pitch-slot text.slot-country {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 7px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    fill: #6060a0;
+  }
+
+  /* bench list beside pitch */
+  .bench-panel {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .bench-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .bench-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .bench-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bench-card-pos {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    width: 22px;
+    flex-shrink: 0;
+  }
+
+  .bench-card-pos.PO { color: #ff9944; }
+  .bench-card-pos.DF { color: #4499ff; }
+  .bench-card-pos.MC { color: #44cc88; }
+  .bench-card-pos.DC { color: #cc44ff; }
+
+  .bench-card-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .bench-card-country {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
 </style>
 </head>
 <body>
@@ -751,7 +871,151 @@
       <div class="plantilla-count" id="plantilla-count">0 / 17 jugadores</div>
     </div>
     <div class="user-selector-row" id="plantilla-user-selector"></div>
-    <div id="plantilla-grid" class="plantilla-grid"></div>
+
+    <!-- PITCH + BENCH layout -->
+    <div class="plantilla-layout">
+
+      <!-- Football pitch SVG -->
+      <div class="pitch-wrapper">
+        <svg id="pitch-svg" class="pitch-svg" viewBox="0 0 340 480" xmlns="http://www.w3.org/2000/svg">
+          <!-- Pitch background stripes -->
+          <rect width="340" height="480" fill="#2d6e3e"/>
+          <rect y="0"   width="340" height="40"  fill="#2a6639"/>
+          <rect y="40"  width="340" height="40"  fill="#2d6e3e"/>
+          <rect y="80"  width="340" height="40"  fill="#2a6639"/>
+          <rect y="120" width="340" height="40"  fill="#2d6e3e"/>
+          <rect y="160" width="340" height="40"  fill="#2a6639"/>
+          <rect y="200" width="340" height="40"  fill="#2d6e3e"/>
+          <rect y="240" width="340" height="40"  fill="#2a6639"/>
+          <rect y="280" width="340" height="40"  fill="#2d6e3e"/>
+          <rect y="320" width="340" height="40"  fill="#2a6639"/>
+          <rect y="360" width="340" height="40"  fill="#2d6e3e"/>
+          <rect y="400" width="340" height="40"  fill="#2a6639"/>
+          <rect y="440" width="340" height="40"  fill="#2d6e3e"/>
+
+          <!-- Pitch border -->
+          <rect x="16" y="16" width="308" height="448" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+
+          <!-- Centre line -->
+          <line x1="16" y1="240" x2="324" y2="240" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+
+          <!-- Centre circle -->
+          <circle cx="170" cy="240" r="42" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+          <circle cx="170" cy="240" r="2.5" fill="rgba(255,255,255,0.6)"/>
+
+          <!-- Penalty area top (opponent) -->
+          <rect x="90" y="16" width="160" height="72" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+          <!-- Goal area top -->
+          <rect x="126" y="16" width="88" height="26" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+          <!-- Penalty spot top -->
+          <circle cx="170" cy="60" r="2" fill="rgba(255,255,255,0.6)"/>
+          <!-- Penalty arc top -->
+          <path d="M 138 88 A 38 38 0 0 0 202 88" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+
+          <!-- Penalty area bottom (our half) -->
+          <rect x="90" y="392" width="160" height="72" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+          <!-- Goal area bottom -->
+          <rect x="126" y="438" width="88" height="26" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+          <!-- Penalty spot bottom -->
+          <circle cx="170" cy="420" r="2" fill="rgba(255,255,255,0.6)"/>
+          <!-- Penalty arc bottom -->
+          <path d="M 138 392 A 38 38 0 0 1 202 392" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+
+          <!-- Corner arcs -->
+          <path d="M 16 28 A 12 12 0 0 1 28 16" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+          <path d="M 312 16 A 12 12 0 0 1 324 28" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+          <path d="M 324 452 A 12 12 0 0 1 312 464" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+          <path d="M 28 464 A 12 12 0 0 1 16 452" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+
+          <!-- Goals -->
+          <rect x="140" y="8" width="60" height="10" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+          <rect x="140" y="462" width="60" height="10" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+
+          <!-- ── PLAYER SLOTS 4-3-3 ── -->
+          <!-- Positions (cx,cy): rendered top=attack → bottom=defense (portrait) -->
+
+          <!-- DC — 3 forwards, y=110 -->
+          <g id="slot-DC-0" class="pitch-slot empty" data-slot="DC-0">
+            <circle class="slot-bg" cx="80"  cy="110" r="28" fill="rgba(10,10,20,0.55)" stroke="#cc44ff" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="80"  y="106" fill="#cc44ff">DC</text>
+            <text class="slot-name" x="80"  y="118" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="80"  y="128" opacity="0"></text>
+          </g>
+          <g id="slot-DC-1" class="pitch-slot empty" data-slot="DC-1">
+            <circle class="slot-bg" cx="170" cy="95"  r="28" fill="rgba(10,10,20,0.55)" stroke="#cc44ff" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="170" y="91"  fill="#cc44ff">DC</text>
+            <text class="slot-name" x="170" y="103" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="170" y="113" opacity="0"></text>
+          </g>
+          <g id="slot-DC-2" class="pitch-slot empty" data-slot="DC-2">
+            <circle class="slot-bg" cx="260" cy="110" r="28" fill="rgba(10,10,20,0.55)" stroke="#cc44ff" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="260" y="106" fill="#cc44ff">DC</text>
+            <text class="slot-name" x="260" y="118" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="260" y="128" opacity="0"></text>
+          </g>
+
+          <!-- MC — 3 midfielders, y=205 -->
+          <g id="slot-MC-0" class="pitch-slot empty" data-slot="MC-0">
+            <circle class="slot-bg" cx="90"  cy="210" r="28" fill="rgba(10,10,20,0.55)" stroke="#44cc88" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="90"  y="206" fill="#44cc88">MC</text>
+            <text class="slot-name" x="90"  y="218" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="90"  y="228" opacity="0"></text>
+          </g>
+          <g id="slot-MC-1" class="pitch-slot empty" data-slot="MC-1">
+            <circle class="slot-bg" cx="170" cy="200" r="28" fill="rgba(10,10,20,0.55)" stroke="#44cc88" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="170" y="196" fill="#44cc88">MC</text>
+            <text class="slot-name" x="170" y="208" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="170" y="218" opacity="0"></text>
+          </g>
+          <g id="slot-MC-2" class="pitch-slot empty" data-slot="MC-2">
+            <circle class="slot-bg" cx="250" cy="210" r="28" fill="rgba(10,10,20,0.55)" stroke="#44cc88" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="250" y="206" fill="#44cc88">MC</text>
+            <text class="slot-name" x="250" y="218" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="250" y="228" opacity="0"></text>
+          </g>
+
+          <!-- DF — 4 defenders, y=320 -->
+          <g id="slot-DF-0" class="pitch-slot empty" data-slot="DF-0">
+            <circle class="slot-bg" cx="48"  cy="320" r="28" fill="rgba(10,10,20,0.55)" stroke="#4499ff" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="48"  y="316" fill="#4499ff">DF</text>
+            <text class="slot-name" x="48"  y="328" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="48"  y="338" opacity="0"></text>
+          </g>
+          <g id="slot-DF-1" class="pitch-slot empty" data-slot="DF-1">
+            <circle class="slot-bg" cx="122" cy="320" r="28" fill="rgba(10,10,20,0.55)" stroke="#4499ff" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="122" y="316" fill="#4499ff">DF</text>
+            <text class="slot-name" x="122" y="328" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="122" y="338" opacity="0"></text>
+          </g>
+          <g id="slot-DF-2" class="pitch-slot empty" data-slot="DF-2">
+            <circle class="slot-bg" cx="218" cy="320" r="28" fill="rgba(10,10,20,0.55)" stroke="#4499ff" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="218" y="316" fill="#4499ff">DF</text>
+            <text class="slot-name" x="218" y="328" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="218" y="338" opacity="0"></text>
+          </g>
+          <g id="slot-DF-3" class="pitch-slot empty" data-slot="DF-3">
+            <circle class="slot-bg" cx="292" cy="320" r="28" fill="rgba(10,10,20,0.55)" stroke="#4499ff" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="292" y="316" fill="#4499ff">DF</text>
+            <text class="slot-name" x="292" y="328" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="292" y="338" opacity="0"></text>
+          </g>
+
+          <!-- PO — goalkeeper, y=430 -->
+          <g id="slot-PO-0" class="pitch-slot empty" data-slot="PO-0">
+            <circle class="slot-bg" cx="170" cy="430" r="28" fill="rgba(10,10,20,0.55)" stroke="#ff9944" stroke-width="1.5" stroke-dasharray="5 3"/>
+            <text class="slot-pos" x="170" y="426" fill="#ff9944">POR</text>
+            <text class="slot-name" x="170" y="438" fill="#e8e8f0" opacity="0"></text>
+            <text class="slot-country" x="170" y="448" opacity="0"></text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Bench / suplentes list -->
+      <div class="bench-panel">
+        <div class="bench-title">Suplentes / Sin asignar</div>
+        <div class="bench-list" id="bench-list"></div>
+      </div>
+    </div>
   </div>
 
   <!-- DRAFT TAB -->
@@ -808,14 +1072,13 @@
 
 <!-- Toast -->
 <div id="toast"></div>
-
 <script type="module">
 // ────────────────────────────────────────────────────────
 // DATA
 // ────────────────────────────────────────────────────────
-
 import { PLAYERS_RAW } from './data/players.js';
 import { USERS } from './data/users.js';
+
 const MAX_PICKS = 17;
 // Add unique ids
 PLAYERS_RAW.forEach((p,i) => p.id = i);
@@ -932,38 +1195,101 @@ function initPlantilla() {
   renderPlantilla(currentUser);
 }
 
+// ── Pitch slot definitions: slotId → expected position ──
+const PITCH_SLOTS = [
+  { id: 'PO-0', pos: 'PO' },
+  { id: 'DF-0', pos: 'DF' },
+  { id: 'DF-1', pos: 'DF' },
+  { id: 'DF-2', pos: 'DF' },
+  { id: 'DF-3', pos: 'DF' },
+  { id: 'MC-0', pos: 'MC' },
+  { id: 'MC-1', pos: 'MC' },
+  { id: 'MC-2', pos: 'MC' },
+  { id: 'DC-0', pos: 'DC' },
+  { id: 'DC-1', pos: 'DC' },
+  { id: 'DC-2', pos: 'DC' },
+];
+
 function renderPlantilla(user) {
   const userPicks = state.picks
     .filter(p => p.user === user)
-    .map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId));
+    .map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId))
+    .filter(Boolean);
 
   document.getElementById('plantilla-count').textContent = `${userPicks.length} / ${MAX_PICKS} jugadores`;
   document.querySelector('.plantilla-title').textContent =
     user === currentUser ? 'Mi Plantilla' : `Plantilla de ${user.split(' ')[0]}`;
 
-  const grid = document.getElementById('plantilla-grid');
-  grid.innerHTML = '';
+  // ── Assign players to pitch slots greedily by position ──
+  const byPos = { PO: [], DF: [], MC: [], DC: [] };
+  userPicks.forEach(p => { if (byPos[p.pos]) byPos[p.pos].push(p); });
 
-  const posOrder = ['PO','DF','MC','DC'];
-  const sorted = [...userPicks].sort((a,b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos));
+  // Clone so we consume them
+  const pool = { PO: [...byPos.PO], DF: [...byPos.DF], MC: [...byPos.MC], DC: [...byPos.DC] };
 
-  sorted.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'player-card';
-    card.innerHTML = `
-      <div class="player-card-pos ${p.pos}">${p.pos}</div>
-      <div class="player-card-name">${p.name}</div>
-      <div class="player-card-country">${p.country}</div>
-    `;
-    grid.appendChild(card);
+  const slotAssignment = {}; // slotId → player
+  PITCH_SLOTS.forEach(slot => {
+    const candidates = pool[slot.pos];
+    if (candidates && candidates.length > 0) {
+      slotAssignment[slot.id] = candidates.shift();
+    }
   });
 
-  // empty slots
-  for (let i = sorted.length; i < MAX_PICKS; i++) {
-    const slot = document.createElement('div');
-    slot.className = 'empty-slot';
-    slot.textContent = `VACANTE ${i+1}`;
-    grid.appendChild(slot);
+  // ── Render SVG slots ──
+  PITCH_SLOTS.forEach(slot => {
+    const g = document.getElementById('slot-' + slot.id);
+    if (!g) return;
+    const player = slotAssignment[slot.id];
+    const circleBg = g.querySelector('circle.slot-bg');
+    const textPos  = g.querySelector('text.slot-pos');
+    const textName = g.querySelector('text.slot-name');
+    const textCtry = g.querySelector('text.slot-country');
+
+    if (player) {
+      g.classList.remove('empty');
+      g.classList.add('filled');
+      circleBg.setAttribute('stroke-dasharray', 'none');
+      circleBg.style.fill = '#12121a';
+      textPos.setAttribute('opacity', '0.5');
+      // shorten name if needed
+      const shortName = player.name.split(' ').pop(); // last name
+      textName.textContent = shortName.length > 9 ? shortName.slice(0,9)+'…' : shortName;
+      textName.setAttribute('opacity', '1');
+      textCtry.textContent = player.country.slice(0,3).toUpperCase();
+      textCtry.setAttribute('opacity', '1');
+    } else {
+      g.classList.remove('filled');
+      g.classList.add('empty');
+      circleBg.setAttribute('stroke-dasharray', '5 3');
+      circleBg.style.fill = 'rgba(10,10,20,0.55)';
+      textPos.setAttribute('opacity', '1');
+      if (textName) { textName.textContent = ''; textName.setAttribute('opacity','0'); }
+      if (textCtry) { textCtry.textContent = ''; textCtry.setAttribute('opacity','0'); }
+    }
+  });
+
+  // ── Bench: players not placed on pitch ──
+  const assignedPlayers = new Set(Object.values(slotAssignment).map(p => p?.id));
+  const benchPlayers = userPicks.filter(p => !assignedPlayers.has(p.id));
+
+  const benchList = document.getElementById('bench-list');
+  benchList.innerHTML = '';
+
+  if (benchPlayers.length === 0 && userPicks.length === 0) {
+    benchList.innerHTML = '<div style="font-family:IBM Plex Mono,monospace;font-size:0.7rem;color:var(--muted);padding:8px 0">Aún no tienes jugadores</div>';
+  } else if (benchPlayers.length === 0) {
+    benchList.innerHTML = '<div style="font-family:IBM Plex Mono,monospace;font-size:0.7rem;color:var(--muted);padding:8px 0">Todos en el campo</div>';
+  } else {
+    benchPlayers.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'bench-card';
+      card.innerHTML = `
+        <span class="bench-card-pos ${p.pos}">${p.pos}</span>
+        <span class="bench-card-name">${p.name}</span>
+        <span class="bench-card-country">${p.country}</span>
+      `;
+      benchList.appendChild(card);
+    });
   }
 }
 
