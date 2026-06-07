@@ -894,6 +894,19 @@
   </div>
 </div>
 
+
+<!-- NICKNAME SCREEN -->
+<div id="screen-nickname" class="screen">
+  <div class="login-box">
+    <div class="login-title">APODO</div>
+    <div class="login-sub">Primer acceso</div>
+    <label class="login-label">¿Cómo quieres que te llamemos?</label>
+    <input id="nickname-input" type="text" maxlength="20"
+      style="width:100%;padding:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);margin-bottom:20px;">
+    <button class="btn-primary" id="btn-save-nickname">CONTINUAR</button>
+  </div>
+</div>
+
 <!-- MAIN SCREEN -->
 <div id="screen-main" class="screen">
   <div class="topbar">
@@ -1128,6 +1141,21 @@ PLAYERS_RAW.forEach((p,i) => p.id = i);
 // STATE — stored in localStorage so it persists
 // ────────────────────────────────────────────────────────
 const STORAGE_KEY = 'mundial2026_draft_v3';
+const NICKNAME_KEY = 'mundial2026_nicknames';
+
+function loadNicknames() {
+  try { return JSON.parse(localStorage.getItem(NICKNAME_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+let nicknames = loadNicknames();
+
+function saveNicknames() {
+  localStorage.setItem(NICKNAME_KEY, JSON.stringify(nicknames));
+}
+
+function displayName(user) {
+  return nicknames[user] || user;
+}
 
 function loadState() {
   try {
@@ -1186,6 +1214,32 @@ function initLogin() {
 
   document.getElementById('btn-enter').onclick = () => {
     if (!currentUser) return;
+
+    if (!nicknames[currentUser]) {
+      showNicknameScreen();
+      return;
+    }
+
+    generateDraftOrder();
+    enterMainScreen();
+  };
+}
+
+function showNicknameScreen() {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-nickname').classList.add('active');
+
+  const input = document.getElementById('nickname-input');
+  input.value = '';
+
+  document.getElementById('btn-save-nickname').onclick = () => {
+    const nickname = input.value.trim();
+    if (!nickname) return;
+
+    nicknames[currentUser] = nickname;
+    saveNicknames();
+
+    document.getElementById('screen-nickname').classList.remove('active');
     generateDraftOrder();
     enterMainScreen();
   };
@@ -1194,7 +1248,7 @@ function initLogin() {
 function enterMainScreen() {
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-main').classList.add('active');
-  document.getElementById('topbar-username').textContent = currentUser;
+  document.getElementById('topbar-username').textContent = displayName(currentUser);
   initPlantilla();
   initDraft();
 }
@@ -1458,6 +1512,8 @@ function setHint(msg, color) {
     el.textContent = msg;
     el.style.color = color || 'var(--muted)';
   }
+}
+
 }
 
 // ────────────────────────────────────────────────────────
