@@ -784,41 +784,70 @@
     fill: #6060a0;
   }
 
-  /* bench list beside pitch */
+  /* ── SQUAD PANEL ── */
   .bench-panel {
     flex: 1;
-    min-width: 200px;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 220px);
   }
 
-  .bench-title {
+  .bench-hint {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.65rem;
-    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    line-height: 1.5;
+    min-height: 2.2em;
+    transition: color 0.2s;
+  }
+
+  .squad-section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 12px;
+    padding: 6px 0 6px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+    margin-top: 10px;
   }
+
+  .squad-section-title:first-child { margin-top: 0; }
 
   .bench-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
+    overflow-y: auto;
+    flex: 1;
   }
 
   .bench-card {
     background: var(--surface2);
     border: 1px solid var(--border);
-    padding: 8px 12px;
+    padding: 7px 10px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+
+  .bench-card:hover { border-color: var(--accent2); }
+
+  .bench-card.selected-card {
+    border-color: var(--accent);
+    background: #1e1a00;
   }
 
   .bench-card-pos {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     letter-spacing: 1px;
-    width: 22px;
+    width: 20px;
     flex-shrink: 0;
   }
 
@@ -828,56 +857,27 @@
   .bench-card-pos.DC { color: #cc44ff; }
 
   .bench-card-name {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 600;
     flex: 1;
   }
 
   .bench-card-country {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: var(--muted);
   }
 
-  .bench-card.on-pitch {
-    border-color: #44cc8855;
-    opacity: 0.6;
+  /* Slot glow when a player is selected */
+  .pitch-slot.can-receive circle.slot-bg {
+    stroke-width: 2.5 !important;
+    filter: drop-shadow(0 0 6px currentColor);
+    animation: slot-pulse 1s ease-in-out infinite;
   }
 
-  .bench-card.selected-card {
-    border-color: var(--accent);
-    background: #1e1a00;
-  }
-
-  .bench-badge {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.55rem;
-    padding: 2px 5px;
-    border: 1px solid;
-    flex-shrink: 0;
-  }
-
-  .on-pitch-badge {
-    color: var(--green);
-    border-color: var(--green);
-  }
-
-  .sel-badge {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .bench-subtitle {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-bottom: 12px;
-    line-height: 1.4;
-  }
-
-  .bench-list {
-    overflow-y: auto;
-    max-height: calc(100vh - 300px);
+  @keyframes slot-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
   }
 </style>
 </head>
@@ -1051,10 +1051,9 @@
         </svg>
       </div>
 
-      <!-- Squad panel (all players, manual assignment) -->
+      <!-- Squad panel -->
       <div class="bench-panel">
-        <div class="bench-title">Mis Jugadores</div>
-        <div class="bench-subtitle" id="bench-subtitle">Pulsa un jugador para colocarlo en el campo</div>
+        <div class="bench-hint" id="bench-hint">Pulsa un jugador para seleccionarlo</div>
         <div class="bench-list" id="bench-list"></div>
       </div>
     </div>
@@ -1122,8 +1121,8 @@ import { PLAYERS_RAW } from './data/players.js';
 import { USERS } from './data/users.js';
 
 const MAX_PICKS = 17;
-// Assign stable ids (only if not already set)
-PLAYERS_RAW.forEach((p,i) => { p.id = i; });
+// Add unique ids
+PLAYERS_RAW.forEach((p,i) => p.id = i);
 
 // ────────────────────────────────────────────────────────
 // STATE — stored in localStorage so it persists
@@ -1237,6 +1236,7 @@ function initPlantilla() {
   renderPlantilla(currentUser);
 }
 
+// ── Pitch slot definitions: slotId → expected position ──
 // ── Pitch slot definitions ──
 const PITCH_SLOTS = [
   { id: 'PO-0', pos: 'PO' },
@@ -1246,29 +1246,30 @@ const PITCH_SLOTS = [
   { id: 'DC-0', pos: 'DC' }, { id: 'DC-1', pos: 'DC' }, { id: 'DC-2', pos: 'DC' },
 ];
 
-// ── Manual pitch assignment: slotId → playerId ──
-// Stored per user: pitchAssignment[user][slotId] = playerId
-let pitchAssignment = {};
+// ── Persist pitch assignment per user ──
+const PITCH_KEY = 'mundial2026_pitch_v2';
+let pitchAssignment = (() => {
+  try { return JSON.parse(localStorage.getItem(PITCH_KEY)) || {}; } catch(e) { return {}; }
+})();
+function savePitch() { localStorage.setItem(PITCH_KEY, JSON.stringify(pitchAssignment)); }
 
-// Load/save pitch assignments separately
-const PITCH_KEY = 'mundial2026_pitch_v1';
-function loadPitchAssignment() {
-  try {
-    const s = localStorage.getItem(PITCH_KEY);
-    if (s) return JSON.parse(s);
-  } catch(e) {}
-  return {};
-}
-function savePitchAssignment() {
-  localStorage.setItem(PITCH_KEY, JSON.stringify(pitchAssignment));
-}
-pitchAssignment = loadPitchAssignment();
-
-// ── Currently selected player card (for assignment) ──
+// ── Currently selected player id (for manual assignment) ──
 let selectedSquadPlayerId = null;
 
+// ── Highlight slots that match the selected player's position ──
+function highlightCompatibleSlots(pos) {
+  PITCH_SLOTS.forEach(slot => {
+    const g = document.getElementById('slot-' + slot.id);
+    if (!g) return;
+    if (pos && slot.pos === pos) {
+      g.classList.add('can-receive');
+    } else {
+      g.classList.remove('can-receive');
+    }
+  });
+}
+
 function renderPlantilla(user) {
-  // Re-read state fresh every time — fixes the multi-round picks bug
   const userPicks = state.picks
     .filter(p => p.user === user)
     .map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId))
@@ -1278,32 +1279,31 @@ function renderPlantilla(user) {
   document.querySelector('.plantilla-title').textContent =
     user === currentUser ? 'Mi Plantilla' : `Plantilla de ${user.split(' ')[0]}`;
 
-  // Get this user's pitch assignment
-  const userAssignment = pitchAssignment[user] || {};
-  // Validate: remove any assigned player no longer in picks
+  // Validate assignment: remove players no longer in picks
+  const assignment = pitchAssignment[user] || {};
   const pickIds = new Set(userPicks.map(p => p.id));
-  Object.keys(userAssignment).forEach(slotId => {
-    if (!pickIds.has(userAssignment[slotId])) delete userAssignment[slotId];
-  });
-  pitchAssignment[user] = userAssignment;
+  Object.keys(assignment).forEach(sid => { if (!pickIds.has(assignment[sid])) delete assignment[sid]; });
+  pitchAssignment[user] = assignment;
+
+  const assignedIds = new Set(Object.values(assignment)); // playerIds on pitch
+  const isMe = user === currentUser;
 
   // ── Render SVG slots ──
   PITCH_SLOTS.forEach(slot => {
     const g = document.getElementById('slot-' + slot.id);
     if (!g) return;
-    const assignedId = userAssignment[slot.id];
-    const player = assignedId !== undefined ? PLAYERS_RAW.find(p => p.id === assignedId) : null;
+    const playerId = assignment[slot.id];
+    const player = playerId !== undefined ? PLAYERS_RAW.find(p => p.id === playerId) : null;
     const circleBg = g.querySelector('circle.slot-bg');
     const textPos  = g.querySelector('text.slot-pos');
     const textName = g.querySelector('text.slot-name');
     const textCtry = g.querySelector('text.slot-country');
 
-    // Render filled or empty
     if (player) {
       g.classList.remove('empty'); g.classList.add('filled');
       circleBg.setAttribute('stroke-dasharray', 'none');
       circleBg.style.fill = '#12121a';
-      textPos.setAttribute('opacity', '0.4');
+      textPos.setAttribute('opacity', '0.35');
       const shortName = player.name.split(' ').pop();
       textName.textContent = shortName.length > 9 ? shortName.slice(0,9)+'…' : shortName;
       textName.setAttribute('opacity', '1');
@@ -1318,43 +1318,46 @@ function renderPlantilla(user) {
       if (textCtry) { textCtry.textContent = ''; textCtry.setAttribute('opacity','0'); }
     }
 
-    // Click on slot: assign selected player (only if viewing own squad)
-    g.style.cursor = (user === currentUser) ? 'pointer' : 'default';
+    // Click handler
     g.onclick = null;
-    if (user === currentUser) {
-      g.onclick = () => {
-        if (selectedSquadPlayerId === null) {
-          // If slot is filled, unassign (remove from pitch back to squad list)
-          if (player) {
-            delete userAssignment[slot.id];
-            pitchAssignment[user] = userAssignment;
-            savePitchAssignment();
-            selectedSquadPlayerId = null;
-            renderPlantilla(user);
-          }
+    g.style.cursor = isMe ? 'pointer' : 'default';
+    if (!isMe) return;
+
+    g.onclick = () => {
+      if (selectedSquadPlayerId !== null) {
+        // Try to place selected player here
+        const candidate = PLAYERS_RAW.find(p => p.id === selectedSquadPlayerId);
+        if (!candidate) return;
+        if (candidate.pos !== slot.pos) {
+          setHint(`❌ ${candidate.pos} no encaja en posición ${slot.pos}`, 'var(--red)');
+          setTimeout(() => setHint(null), 1800);
           return;
         }
-        // Check position matches
-        const candidatePlayer = PLAYERS_RAW.find(p => p.id === selectedSquadPlayerId);
-        if (candidatePlayer && candidatePlayer.pos !== slot.pos) {
-          showSquadHint(`${candidatePlayer.pos} no puede ir en posición ${slot.pos}`);
-          return;
-        }
-        // Check player not already on pitch in another slot
-        const alreadySlot = Object.keys(userAssignment).find(k => userAssignment[k] === selectedSquadPlayerId);
-        if (alreadySlot) delete userAssignment[alreadySlot];
-        // Assign
-        userAssignment[slot.id] = selectedSquadPlayerId;
-        pitchAssignment[user] = userAssignment;
-        savePitchAssignment();
+        // Remove from any previous slot
+        Object.keys(assignment).forEach(k => { if (assignment[k] === selectedSquadPlayerId) delete assignment[k]; });
+        // If slot was occupied, that player goes back to suplentes automatically
+        assignment[slot.id] = selectedSquadPlayerId;
+        pitchAssignment[user] = assignment;
+        savePitch();
         selectedSquadPlayerId = null;
+        highlightCompatibleSlots(null);
         renderPlantilla(user);
-      };
-    }
+      } else {
+        // No player selected — click on filled slot removes it
+        if (player) {
+          delete assignment[slot.id];
+          pitchAssignment[user] = assignment;
+          savePitch();
+          renderPlantilla(user);
+        }
+      }
+    };
   });
 
-  // ── Squad panel: ALL players, highlight selected & on-pitch ──
-  const assignedIds = new Set(Object.values(userAssignment));
+  // ── Squad panel: titulares & suplentes ──
+  const titulares = userPicks.filter(p => assignedIds.has(p.id));
+  const suplentes = userPicks.filter(p => !assignedIds.has(p.id));
+
   const benchList = document.getElementById('bench-list');
   benchList.innerHTML = '';
 
@@ -1364,64 +1367,99 @@ function renderPlantilla(user) {
   }
 
   const posOrder = ['PO','DF','MC','DC'];
-  const sorted = [...userPicks].sort((a,b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos));
 
-  sorted.forEach(p => {
-    const onPitch = assignedIds.has(p.id);
-    const isSelected = selectedSquadPlayerId === p.id;
-    const card = document.createElement('div');
-    card.className = 'bench-card' + (onPitch ? ' on-pitch' : '') + (isSelected ? ' selected-card' : '');
-    card.innerHTML = `
-      <span class="bench-card-pos ${p.pos}">${p.pos}</span>
-      <span class="bench-card-name">${p.name}</span>
-      <span class="bench-card-country">${p.country}</span>
-      ${onPitch ? '<span class="bench-badge on-pitch-badge">TITULAR</span>' : ''}
-      ${isSelected ? '<span class="bench-badge sel-badge">✓</span>' : ''}
-    `;
-    if (user === currentUser) {
-      card.style.cursor = 'pointer';
-      card.onclick = () => {
-        if (onPitch) {
-          // Click on a titled player: unassign from pitch
-          const slotId = Object.keys(userAssignment).find(k => userAssignment[k] === p.id);
-          if (slotId) {
-            delete userAssignment[slotId];
-            pitchAssignment[user] = userAssignment;
-            savePitchAssignment();
-          }
-          selectedSquadPlayerId = null;
-        } else {
-          // Select/deselect
-          selectedSquadPlayerId = isSelected ? null : p.id;
-        }
-        renderPlantilla(user);
-      };
-    }
-    benchList.appendChild(card);
-  });
+  // Section: Titulares
+  const titleT = document.createElement('div');
+  titleT.className = 'squad-section-title';
+  titleT.textContent = `Titulares (${titulares.length}/11)`;
+  benchList.appendChild(titleT);
 
-  updateSquadHint();
+  if (titulares.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:0.65rem;color:var(--muted);padding:6px 0';
+    empty.textContent = 'Ninguno alineado aún';
+    benchList.appendChild(empty);
+  } else {
+    [...titulares].sort((a,b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos))
+      .forEach(p => benchList.appendChild(makeSquadCard(p, true, isMe, assignment, user)));
+  }
+
+  // Section: Suplentes
+  const titleS = document.createElement('div');
+  titleS.className = 'squad-section-title';
+  titleS.textContent = `Suplentes (${suplentes.length})`;
+  benchList.appendChild(titleS);
+
+  if (suplentes.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:0.65rem;color:var(--muted);padding:6px 0';
+    empty.textContent = 'Todos en el campo';
+    benchList.appendChild(empty);
+  } else {
+    [...suplentes].sort((a,b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos))
+      .forEach(p => benchList.appendChild(makeSquadCard(p, false, isMe, assignment, user)));
+  }
+
+  // Restore highlight if player still selected
+  if (selectedSquadPlayerId !== null) {
+    const sel = PLAYERS_RAW.find(p => p.id === selectedSquadPlayerId);
+    if (sel) highlightCompatibleSlots(sel.pos);
+  }
+  setHint(null);
 }
 
-function updateSquadHint() {
-  const sub = document.getElementById('bench-subtitle');
-  if (!sub) return;
-  if (selectedSquadPlayerId !== null) {
-    const p = PLAYERS_RAW.find(pl => pl.id === selectedSquadPlayerId);
-    sub.textContent = p ? `Seleccionado: ${p.name} — pulsa un círculo ${p.pos} en el campo` : '';
-    sub.style.color = 'var(--accent)';
+function makeSquadCard(player, isTitular, isMe, assignment, user) {
+  const isSelected = selectedSquadPlayerId === player.id;
+  const card = document.createElement('div');
+  card.className = 'bench-card' + (isSelected ? ' selected-card' : '');
+  card.innerHTML = `
+    <span class="bench-card-pos ${player.pos}">${player.pos}</span>
+    <span class="bench-card-name">${player.name}</span>
+    <span class="bench-card-country">${player.country}</span>
+  `;
+  if (!isMe) return card;
+
+  card.onclick = () => {
+    if (isTitular) {
+      // Remove from pitch → moves to suplentes
+      const slotId = Object.keys(assignment).find(k => assignment[k] === player.id);
+      if (slotId) {
+        delete assignment[slotId];
+        pitchAssignment[user] = assignment;
+        savePitch();
+      }
+      selectedSquadPlayerId = null;
+      highlightCompatibleSlots(null);
+      renderPlantilla(user);
+    } else {
+      // Select/deselect for placement
+      if (isSelected) {
+        selectedSquadPlayerId = null;
+        highlightCompatibleSlots(null);
+      } else {
+        selectedSquadPlayerId = player.id;
+        highlightCompatibleSlots(player.pos);
+        setHint(`Seleccionado: ${player.name} — pulsa un círculo ${player.pos} en el campo`, 'var(--accent)');
+      }
+      renderPlantilla(user);
+    }
+  };
+  return card;
+}
+
+function setHint(msg, color) {
+  const el = document.getElementById('bench-hint');
+  if (!el) return;
+  if (msg === null) {
+    if (selectedSquadPlayerId !== null) return; // keep existing hint
+    el.textContent = 'Pulsa un suplente para alinearlo · Pulsa un titular para quitarlo';
+    el.style.color = 'var(--muted)';
   } else {
-    sub.textContent = 'Pulsa un jugador para colocarlo · Pulsa de nuevo para quitarlo';
-    sub.style.color = 'var(--muted)';
+    el.textContent = msg;
+    el.style.color = color || 'var(--muted)';
   }
 }
 
-function showSquadHint(msg) {
-  const sub = document.getElementById('bench-subtitle');
-  if (!sub) return;
-  sub.textContent = msg;
-  sub.style.color = 'var(--red)';
-  setTimeout(updateSquadHint, 2000);
 }
 
 // ────────────────────────────────────────────────────────
