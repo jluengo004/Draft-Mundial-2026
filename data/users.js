@@ -6,7 +6,7 @@ export const USERS = [
  'Markel R',
  'Mikel P',
  'Oier E',
- 'Ortiz M',
+ 'Ortzi M',
  'Urko F',
  'Urtzi S',
  'Alberto GdC',

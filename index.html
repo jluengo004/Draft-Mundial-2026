@@ -838,6 +838,47 @@
     font-size: 0.65rem;
     color: var(--muted);
   }
+
+  .bench-card.on-pitch {
+    border-color: #44cc8855;
+    opacity: 0.6;
+  }
+
+  .bench-card.selected-card {
+    border-color: var(--accent);
+    background: #1e1a00;
+  }
+
+  .bench-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.55rem;
+    padding: 2px 5px;
+    border: 1px solid;
+    flex-shrink: 0;
+  }
+
+  .on-pitch-badge {
+    color: var(--green);
+    border-color: var(--green);
+  }
+
+  .sel-badge {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .bench-subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .bench-list {
+    overflow-y: auto;
+    max-height: calc(100vh - 300px);
+  }
 </style>
 </head>
 <body>
@@ -860,8 +901,8 @@
     <div class="topbar-user">Jugando como <span id="topbar-username">—</span></div>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" id="nav-plantilla">Plantilla</button>
-    <button class="nav-tab" id="nav-draft">Draft</button>
+    <button class="nav-tab active" onclick="switchTab('plantilla')">Plantilla</button>
+    <button class="nav-tab" onclick="switchTab('draft')">Draft</button>
   </div>
 
   <!-- PLANTILLA TAB -->
@@ -1010,9 +1051,10 @@
         </svg>
       </div>
 
-      <!-- Bench / suplentes list -->
+      <!-- Squad panel (all players, manual assignment) -->
       <div class="bench-panel">
-        <div class="bench-title">Suplentes / Sin asignar</div>
+        <div class="bench-title">Mis Jugadores</div>
+        <div class="bench-subtitle" id="bench-subtitle">Pulsa un jugador para colocarlo en el campo</div>
         <div class="bench-list" id="bench-list"></div>
       </div>
     </div>
@@ -1034,12 +1076,12 @@
       <!-- Player list -->
       <div class="draft-player-panel">
         <div class="draft-search-bar">
-          <input type="text" class="draft-search-input" id="search-input" placeholder="Buscar jugador...">
-          <button class="filter-pos-btn active" data-pos="ALL">TODOS</button>
-          <button class="filter-pos-btn" data-pos="PO" style="color:#ff9944">PO</button>
-          <button class="filter-pos-btn" data-pos="DF" style="color:#4499ff">DF</button>
-          <button class="filter-pos-btn" data-pos="MC" style="color:#44cc88">MC</button>
-          <button class="filter-pos-btn" data-pos="DC" style="color:#cc44ff">DC</button>
+          <input type="text" class="draft-search-input" id="search-input" placeholder="Buscar jugador..." oninput="filterPlayers()">
+          <button class="filter-pos-btn active" onclick="togglePosFilter(this,'ALL')" data-pos="ALL">TODOS</button>
+          <button class="filter-pos-btn" onclick="togglePosFilter(this,'PO')" data-pos="PO" style="color:#ff9944">PO</button>
+          <button class="filter-pos-btn" onclick="togglePosFilter(this,'DF')" data-pos="DF" style="color:#4499ff">DF</button>
+          <button class="filter-pos-btn" onclick="togglePosFilter(this,'MC')" data-pos="MC" style="color:#44cc88">MC</button>
+          <button class="filter-pos-btn" onclick="togglePosFilter(this,'DC')" data-pos="DC" style="color:#cc44ff">DC</button>
         </div>
         <div class="draft-player-list" id="draft-player-list"></div>
       </div>
@@ -1064,8 +1106,8 @@
     <div class="modal-title">CONFIRMAR PICK</div>
     <div class="modal-body" id="modal-body">¿Quieres fichar a este jugador?</div>
     <div class="modal-actions">
-      <button class="btn-secondary" id="btn-cancel-modal">CANCELAR</button>
-      <button class="btn-danger" id="btn-confirm-pick">FICHAR</button>
+      <button class="btn-secondary" onclick="closeModal()">CANCELAR</button>
+      <button class="btn-danger" onclick="confirmPick()">FICHAR</button>
     </div>
   </div>
 </div>
@@ -1080,8 +1122,8 @@ import { PLAYERS_RAW } from './data/players.js';
 import { USERS } from './data/users.js';
 
 const MAX_PICKS = 17;
-// Add unique ids
-PLAYERS_RAW.forEach((p,i) => p.id = i);
+// Assign stable ids (only if not already set)
+PLAYERS_RAW.forEach((p,i) => { p.id = i; });
 
 // ────────────────────────────────────────────────────────
 // STATE — stored in localStorage so it persists
@@ -1195,22 +1237,38 @@ function initPlantilla() {
   renderPlantilla(currentUser);
 }
 
-// ── Pitch slot definitions: slotId → expected position ──
+// ── Pitch slot definitions ──
 const PITCH_SLOTS = [
   { id: 'PO-0', pos: 'PO' },
-  { id: 'DF-0', pos: 'DF' },
-  { id: 'DF-1', pos: 'DF' },
-  { id: 'DF-2', pos: 'DF' },
-  { id: 'DF-3', pos: 'DF' },
-  { id: 'MC-0', pos: 'MC' },
-  { id: 'MC-1', pos: 'MC' },
-  { id: 'MC-2', pos: 'MC' },
-  { id: 'DC-0', pos: 'DC' },
-  { id: 'DC-1', pos: 'DC' },
-  { id: 'DC-2', pos: 'DC' },
+  { id: 'DF-0', pos: 'DF' }, { id: 'DF-1', pos: 'DF' },
+  { id: 'DF-2', pos: 'DF' }, { id: 'DF-3', pos: 'DF' },
+  { id: 'MC-0', pos: 'MC' }, { id: 'MC-1', pos: 'MC' }, { id: 'MC-2', pos: 'MC' },
+  { id: 'DC-0', pos: 'DC' }, { id: 'DC-1', pos: 'DC' }, { id: 'DC-2', pos: 'DC' },
 ];
 
+// ── Manual pitch assignment: slotId → playerId ──
+// Stored per user: pitchAssignment[user][slotId] = playerId
+let pitchAssignment = {};
+
+// Load/save pitch assignments separately
+const PITCH_KEY = 'mundial2026_pitch_v1';
+function loadPitchAssignment() {
+  try {
+    const s = localStorage.getItem(PITCH_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return {};
+}
+function savePitchAssignment() {
+  localStorage.setItem(PITCH_KEY, JSON.stringify(pitchAssignment));
+}
+pitchAssignment = loadPitchAssignment();
+
+// ── Currently selected player card (for assignment) ──
+let selectedSquadPlayerId = null;
+
 function renderPlantilla(user) {
+  // Re-read state fresh every time — fixes the multi-round picks bug
   const userPicks = state.picks
     .filter(p => p.user === user)
     .map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId))
@@ -1220,77 +1278,150 @@ function renderPlantilla(user) {
   document.querySelector('.plantilla-title').textContent =
     user === currentUser ? 'Mi Plantilla' : `Plantilla de ${user.split(' ')[0]}`;
 
-  // ── Assign players to pitch slots greedily by position ──
-  const byPos = { PO: [], DF: [], MC: [], DC: [] };
-  userPicks.forEach(p => { if (byPos[p.pos]) byPos[p.pos].push(p); });
-
-  // Clone so we consume them
-  const pool = { PO: [...byPos.PO], DF: [...byPos.DF], MC: [...byPos.MC], DC: [...byPos.DC] };
-
-  const slotAssignment = {}; // slotId → player
-  PITCH_SLOTS.forEach(slot => {
-    const candidates = pool[slot.pos];
-    if (candidates && candidates.length > 0) {
-      slotAssignment[slot.id] = candidates.shift();
-    }
+  // Get this user's pitch assignment
+  const userAssignment = pitchAssignment[user] || {};
+  // Validate: remove any assigned player no longer in picks
+  const pickIds = new Set(userPicks.map(p => p.id));
+  Object.keys(userAssignment).forEach(slotId => {
+    if (!pickIds.has(userAssignment[slotId])) delete userAssignment[slotId];
   });
+  pitchAssignment[user] = userAssignment;
 
   // ── Render SVG slots ──
   PITCH_SLOTS.forEach(slot => {
     const g = document.getElementById('slot-' + slot.id);
     if (!g) return;
-    const player = slotAssignment[slot.id];
+    const assignedId = userAssignment[slot.id];
+    const player = assignedId !== undefined ? PLAYERS_RAW.find(p => p.id === assignedId) : null;
     const circleBg = g.querySelector('circle.slot-bg');
     const textPos  = g.querySelector('text.slot-pos');
     const textName = g.querySelector('text.slot-name');
     const textCtry = g.querySelector('text.slot-country');
 
+    // Render filled or empty
     if (player) {
-      g.classList.remove('empty');
-      g.classList.add('filled');
+      g.classList.remove('empty'); g.classList.add('filled');
       circleBg.setAttribute('stroke-dasharray', 'none');
       circleBg.style.fill = '#12121a';
-      textPos.setAttribute('opacity', '0.5');
-      // shorten name if needed
-      const shortName = player.name.split(' ').pop(); // last name
+      textPos.setAttribute('opacity', '0.4');
+      const shortName = player.name.split(' ').pop();
       textName.textContent = shortName.length > 9 ? shortName.slice(0,9)+'…' : shortName;
       textName.setAttribute('opacity', '1');
       textCtry.textContent = player.country.slice(0,3).toUpperCase();
       textCtry.setAttribute('opacity', '1');
     } else {
-      g.classList.remove('filled');
-      g.classList.add('empty');
+      g.classList.remove('filled'); g.classList.add('empty');
       circleBg.setAttribute('stroke-dasharray', '5 3');
       circleBg.style.fill = 'rgba(10,10,20,0.55)';
       textPos.setAttribute('opacity', '1');
       if (textName) { textName.textContent = ''; textName.setAttribute('opacity','0'); }
       if (textCtry) { textCtry.textContent = ''; textCtry.setAttribute('opacity','0'); }
     }
+
+    // Click on slot: assign selected player (only if viewing own squad)
+    g.style.cursor = (user === currentUser) ? 'pointer' : 'default';
+    g.onclick = null;
+    if (user === currentUser) {
+      g.onclick = () => {
+        if (selectedSquadPlayerId === null) {
+          // If slot is filled, unassign (remove from pitch back to squad list)
+          if (player) {
+            delete userAssignment[slot.id];
+            pitchAssignment[user] = userAssignment;
+            savePitchAssignment();
+            selectedSquadPlayerId = null;
+            renderPlantilla(user);
+          }
+          return;
+        }
+        // Check position matches
+        const candidatePlayer = PLAYERS_RAW.find(p => p.id === selectedSquadPlayerId);
+        if (candidatePlayer && candidatePlayer.pos !== slot.pos) {
+          showSquadHint(`${candidatePlayer.pos} no puede ir en posición ${slot.pos}`);
+          return;
+        }
+        // Check player not already on pitch in another slot
+        const alreadySlot = Object.keys(userAssignment).find(k => userAssignment[k] === selectedSquadPlayerId);
+        if (alreadySlot) delete userAssignment[alreadySlot];
+        // Assign
+        userAssignment[slot.id] = selectedSquadPlayerId;
+        pitchAssignment[user] = userAssignment;
+        savePitchAssignment();
+        selectedSquadPlayerId = null;
+        renderPlantilla(user);
+      };
+    }
   });
 
-  // ── Bench: players not placed on pitch ──
-  const assignedPlayers = new Set(Object.values(slotAssignment).map(p => p?.id));
-  const benchPlayers = userPicks.filter(p => !assignedPlayers.has(p.id));
-
+  // ── Squad panel: ALL players, highlight selected & on-pitch ──
+  const assignedIds = new Set(Object.values(userAssignment));
   const benchList = document.getElementById('bench-list');
   benchList.innerHTML = '';
 
-  if (benchPlayers.length === 0 && userPicks.length === 0) {
+  if (userPicks.length === 0) {
     benchList.innerHTML = '<div style="font-family:IBM Plex Mono,monospace;font-size:0.7rem;color:var(--muted);padding:8px 0">Aún no tienes jugadores</div>';
-  } else if (benchPlayers.length === 0) {
-    benchList.innerHTML = '<div style="font-family:IBM Plex Mono,monospace;font-size:0.7rem;color:var(--muted);padding:8px 0">Todos en el campo</div>';
-  } else {
-    benchPlayers.forEach(p => {
-      const card = document.createElement('div');
-      card.className = 'bench-card';
-      card.innerHTML = `
-        <span class="bench-card-pos ${p.pos}">${p.pos}</span>
-        <span class="bench-card-name">${p.name}</span>
-        <span class="bench-card-country">${p.country}</span>
-      `;
-      benchList.appendChild(card);
-    });
+    return;
   }
+
+  const posOrder = ['PO','DF','MC','DC'];
+  const sorted = [...userPicks].sort((a,b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos));
+
+  sorted.forEach(p => {
+    const onPitch = assignedIds.has(p.id);
+    const isSelected = selectedSquadPlayerId === p.id;
+    const card = document.createElement('div');
+    card.className = 'bench-card' + (onPitch ? ' on-pitch' : '') + (isSelected ? ' selected-card' : '');
+    card.innerHTML = `
+      <span class="bench-card-pos ${p.pos}">${p.pos}</span>
+      <span class="bench-card-name">${p.name}</span>
+      <span class="bench-card-country">${p.country}</span>
+      ${onPitch ? '<span class="bench-badge on-pitch-badge">TITULAR</span>' : ''}
+      ${isSelected ? '<span class="bench-badge sel-badge">✓</span>' : ''}
+    `;
+    if (user === currentUser) {
+      card.style.cursor = 'pointer';
+      card.onclick = () => {
+        if (onPitch) {
+          // Click on a titled player: unassign from pitch
+          const slotId = Object.keys(userAssignment).find(k => userAssignment[k] === p.id);
+          if (slotId) {
+            delete userAssignment[slotId];
+            pitchAssignment[user] = userAssignment;
+            savePitchAssignment();
+          }
+          selectedSquadPlayerId = null;
+        } else {
+          // Select/deselect
+          selectedSquadPlayerId = isSelected ? null : p.id;
+        }
+        renderPlantilla(user);
+      };
+    }
+    benchList.appendChild(card);
+  });
+
+  updateSquadHint();
+}
+
+function updateSquadHint() {
+  const sub = document.getElementById('bench-subtitle');
+  if (!sub) return;
+  if (selectedSquadPlayerId !== null) {
+    const p = PLAYERS_RAW.find(pl => pl.id === selectedSquadPlayerId);
+    sub.textContent = p ? `Seleccionado: ${p.name} — pulsa un círculo ${p.pos} en el campo` : '';
+    sub.style.color = 'var(--accent)';
+  } else {
+    sub.textContent = 'Pulsa un jugador para colocarlo · Pulsa de nuevo para quitarlo';
+    sub.style.color = 'var(--muted)';
+  }
+}
+
+function showSquadHint(msg) {
+  const sub = document.getElementById('bench-subtitle');
+  if (!sub) return;
+  sub.textContent = msg;
+  sub.style.color = 'var(--red)';
+  setTimeout(updateSquadHint, 2000);
 }
 
 // ────────────────────────────────────────────────────────
@@ -1526,35 +1657,19 @@ function showToast(msg, type = '') {
 }
 
 // ────────────────────────────────────────────────────────
-// WIRE UP ALL EVENTS (no onclick in HTML — Safari safe)
+// EXPOSE GLOBAL FUNCTIONS (required for type="module")
+// onclick handlers in HTML can't see module-scoped functions
 // ────────────────────────────────────────────────────────
-function wireEvents() {
-  // Nav tabs
-  document.getElementById('nav-plantilla').addEventListener('click', () => switchTab('plantilla'));
-  document.getElementById('nav-draft').addEventListener('click', () => switchTab('draft'));
-
-  // Search input
-  document.getElementById('search-input').addEventListener('input', () => renderDraftPlayerList());
-
-  // Position filter buttons
-  document.querySelectorAll('.filter-pos-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-pos-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      posFilter = btn.dataset.pos;
-      renderDraftPlayerList();
-    });
-  });
-
-  // Modal buttons
-  document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
-  document.getElementById('btn-confirm-pick').addEventListener('click', confirmPick);
-}
+window.switchTab       = switchTab;
+window.togglePosFilter = togglePosFilter;
+window.filterPlayers   = filterPlayers;
+window.openModal       = openModal;
+window.closeModal      = closeModal;
+window.confirmPick     = confirmPick;
 
 // ────────────────────────────────────────────────────────
 // INIT
 // ────────────────────────────────────────────────────────
-wireEvents();
 initLogin();
 </script>
 </body>
