@@ -911,7 +911,7 @@
 <div id="screen-main" class="screen">
   <div class="topbar">
     <div class="topbar-title">MUNDIAL 2026</div>
-    <div class="topbar-user">Jugando como <span id="topbar-username">—</span></div>
+    <div class="topbar-user">Jugando como <span id="topbar-username" style="cursor:pointer" title="Editar apodo">—</span></div>
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('plantilla')">Plantilla</button>
@@ -1249,6 +1249,20 @@ function enterMainScreen() {
   document.getElementById('screen-login').classList.remove('active');
   document.getElementById('screen-main').classList.add('active');
   document.getElementById('topbar-username').textContent = displayName(currentUser);
+  document.getElementById('topbar-username').onclick = () => {
+    const nuevo = prompt('Editar apodo', nicknames[currentUser] || displayName(currentUser));
+    if (nuevo === null) return;
+    const limpio = nuevo.trim();
+    if (!limpio) return;
+    nicknames[currentUser] = limpio;
+    saveNicknames();
+    document.getElementById('topbar-username').textContent = displayName(currentUser);
+    if (typeof initPlantilla === 'function') initPlantilla();
+    if (typeof renderDraft === 'function') renderDraft();
+    if (typeof renderDraftStatusBar === 'function') renderDraftStatusBar();
+    if (typeof renderDraftOrderRow === 'function') renderDraftOrderRow();
+    if (typeof renderDraftPicks === 'function') renderDraftPicks();
+  };
   initPlantilla();
   initDraft();
 }
@@ -1278,7 +1292,7 @@ function initPlantilla() {
   USERS.forEach(u => {
     const btn = document.createElement('button');
     btn.className = 'user-pill' + (u === currentUser ? ' active' : '');
-    btn.textContent = u.split(' ')[0];
+    btn.textContent = displayName(u);
     btn.onclick = () => {
       document.querySelectorAll('.user-pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -1331,7 +1345,7 @@ function renderPlantilla(user) {
 
   document.getElementById('plantilla-count').textContent = `${userPicks.length} / ${MAX_PICKS} jugadores`;
   document.querySelector('.plantilla-title').textContent =
-    user === currentUser ? 'Mi Plantilla' : `Plantilla de ${user.split(' ')[0]}`;
+    user === currentUser ? 'Mi Plantilla' : `Plantilla de ${displayName(user)}`;
 
   // Validate assignment: remove players no longer in picks
   const assignment = pitchAssignment[user] || {};
@@ -1541,7 +1555,7 @@ function renderDraftStatusBar() {
 
   document.getElementById('ds-turn-num').textContent = isDone ? total : turn + 1;
   document.getElementById('ds-round').textContent = round;
-  document.getElementById('ds-current-user').textContent = currentPickUser || '—';
+  document.getElementById('ds-current-user').textContent = currentPickUser ? displayName(currentPickUser) : '—';
   document.getElementById('ds-my-picks').textContent = myPicks;
 
   const ind = document.getElementById('draft-turn-indicator');
@@ -1570,7 +1584,7 @@ function renderDraftOrderRow() {
     const chip = document.createElement('div');
     const u = state.draftOrder[i];
     chip.className = 'draft-order-chip' + (i === turn ? ' current' : '') + (i < turn ? ' done-chip' : '');
-    chip.textContent = `#${i+1} ${u.split(' ')[0]}`;
+    chip.textContent = `#${i+1} ${displayName(u)}`;
     row.appendChild(chip);
   }
 }
@@ -1590,7 +1604,7 @@ function renderDraftPicks() {
     row.className = 'pick-row';
     row.innerHTML = `
       <span class="pick-num">#${pick.pickNum}</span>
-      <span class="pick-user">${pick.user.split(' ')[0]}</span>
+      <span class="pick-user">${displayName(pick.user)}</span>
       <span class="pick-pos ${player.pos}">${player.pos}</span>
       <span class="pick-player">${player.name}</span>
       <span class="pick-country">${player.country}</span>
