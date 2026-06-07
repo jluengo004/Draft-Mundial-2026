@@ -860,8 +860,8 @@
     <div class="topbar-user">Jugando como <span id="topbar-username">—</span></div>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="switchTab('plantilla')">Plantilla</button>
-    <button class="nav-tab" onclick="switchTab('draft')">Draft</button>
+    <button class="nav-tab active" id="nav-plantilla">Plantilla</button>
+    <button class="nav-tab" id="nav-draft">Draft</button>
   </div>
 
   <!-- PLANTILLA TAB -->
@@ -1034,12 +1034,12 @@
       <!-- Player list -->
       <div class="draft-player-panel">
         <div class="draft-search-bar">
-          <input type="text" class="draft-search-input" id="search-input" placeholder="Buscar jugador..." oninput="filterPlayers()">
-          <button class="filter-pos-btn active" onclick="togglePosFilter(this,'ALL')" data-pos="ALL">TODOS</button>
-          <button class="filter-pos-btn" onclick="togglePosFilter(this,'PO')" data-pos="PO" style="color:#ff9944">PO</button>
-          <button class="filter-pos-btn" onclick="togglePosFilter(this,'DF')" data-pos="DF" style="color:#4499ff">DF</button>
-          <button class="filter-pos-btn" onclick="togglePosFilter(this,'MC')" data-pos="MC" style="color:#44cc88">MC</button>
-          <button class="filter-pos-btn" onclick="togglePosFilter(this,'DC')" data-pos="DC" style="color:#cc44ff">DC</button>
+          <input type="text" class="draft-search-input" id="search-input" placeholder="Buscar jugador...">
+          <button class="filter-pos-btn active" data-pos="ALL">TODOS</button>
+          <button class="filter-pos-btn" data-pos="PO" style="color:#ff9944">PO</button>
+          <button class="filter-pos-btn" data-pos="DF" style="color:#4499ff">DF</button>
+          <button class="filter-pos-btn" data-pos="MC" style="color:#44cc88">MC</button>
+          <button class="filter-pos-btn" data-pos="DC" style="color:#cc44ff">DC</button>
         </div>
         <div class="draft-player-list" id="draft-player-list"></div>
       </div>
@@ -1064,8 +1064,8 @@
     <div class="modal-title">CONFIRMAR PICK</div>
     <div class="modal-body" id="modal-body">¿Quieres fichar a este jugador?</div>
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal()">CANCELAR</button>
-      <button class="btn-danger" onclick="confirmPick()">FICHAR</button>
+      <button class="btn-secondary" id="btn-cancel-modal">CANCELAR</button>
+      <button class="btn-danger" id="btn-confirm-pick">FICHAR</button>
     </div>
   </div>
 </div>
@@ -1526,19 +1526,35 @@ function showToast(msg, type = '') {
 }
 
 // ────────────────────────────────────────────────────────
-// EXPOSE GLOBAL FUNCTIONS (required for type="module")
-// onclick handlers in HTML can't see module-scoped functions
+// WIRE UP ALL EVENTS (no onclick in HTML — Safari safe)
 // ────────────────────────────────────────────────────────
-window.switchTab       = switchTab;
-window.togglePosFilter = togglePosFilter;
-window.filterPlayers   = filterPlayers;
-window.openModal       = openModal;
-window.closeModal      = closeModal;
-window.confirmPick     = confirmPick;
+function wireEvents() {
+  // Nav tabs
+  document.getElementById('nav-plantilla').addEventListener('click', () => switchTab('plantilla'));
+  document.getElementById('nav-draft').addEventListener('click', () => switchTab('draft'));
+
+  // Search input
+  document.getElementById('search-input').addEventListener('input', () => renderDraftPlayerList());
+
+  // Position filter buttons
+  document.querySelectorAll('.filter-pos-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pos-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      posFilter = btn.dataset.pos;
+      renderDraftPlayerList();
+    });
+  });
+
+  // Modal buttons
+  document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+  document.getElementById('btn-confirm-pick').addEventListener('click', confirmPick);
+}
 
 // ────────────────────────────────────────────────────────
 // INIT
 // ────────────────────────────────────────────────────────
+wireEvents();
 initLogin();
 </script>
 </body>

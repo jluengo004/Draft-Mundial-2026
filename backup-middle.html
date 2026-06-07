@@ -1526,6 +1526,17 @@ function showToast(msg, type = '') {
 }
 
 // ────────────────────────────────────────────────────────
+// EXPOSE GLOBAL FUNCTIONS (required for type="module")
+// onclick handlers in HTML can't see module-scoped functions
+// ────────────────────────────────────────────────────────
+window.switchTab       = switchTab;
+window.togglePosFilter = togglePosFilter;
+window.filterPlayers   = filterPlayers;
+window.openModal       = openModal;
+window.closeModal      = closeModal;
+window.confirmPick     = confirmPick;
+
+// ────────────────────────────────────────────────────────
 // INIT
 // ────────────────────────────────────────────────────────
 initLogin();
