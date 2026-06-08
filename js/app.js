@@ -10,6 +10,7 @@ import {
 } from './state.js';
 import { initPlantilla, renderPlantilla } from './plantilla.js';
 import { initDraft, renderDraft }         from './draft.js';
+import { initRanking, renderRanking } from './ranking.js';
 
 // Stable player IDs (se asignan una sola vez al arrancar)
 PLAYERS_RAW.forEach((p, i) => { p.id = i; });
@@ -99,6 +100,15 @@ async function bootApp() {
   // Inicializa los dos módulos pasándoles lo que necesitan
   initPlantilla({ currentUser, PLAYERS_RAW, USERS, state, plantillaViewUser, pitchData, displayName });
   initDraft({ currentUser, PLAYERS_RAW, USERS, state, displayName, showToast });
+  initRanking({
+  currentUser,
+  PLAYERS_RAW,
+  USERS,
+  state,
+  displayName,
+  showToast,
+  pitchAssignments: state.pitchAssignments || {}
+});
 
   switchTab('plantilla');
 }
@@ -113,19 +123,29 @@ function onStateChange() {
   if (document.getElementById('tab-plantilla').classList.contains('active')) {
     renderPlantilla(plantillaViewUser || currentUser);
   }
+  if (document.getElementById('tab-ranking')?.classList.contains('active')) {
+    renderRanking();
+  }
 }
 
 // ─────────────────────────────────────────────────────────
 // TAB SWITCHING
 // ─────────────────────────────────────────────────────────
 export function switchTab(tab) {
-  document.querySelectorAll('.nav-tab').forEach((t, i) => {
-    t.classList.toggle('active', (i === 0 && tab === 'plantilla') || (i === 1 && tab === 'draft'));
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    t.classList.remove('active');
   });
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab)?.classList.add('active');
+
+  document.querySelectorAll('.tab-content')
+  .forEach(c => c.classList.remove('active'));
+
+  document.getElementById('tab-' + tab)
+    ?.classList.add('active');
+
   if (tab === 'plantilla') renderPlantilla(plantillaViewUser || currentUser);
-  if (tab === 'draft')     renderDraft();
+  if (tab === 'draft') renderDraft();
+  if (tab === 'ranking') renderRanking();
 }
 
 // ─────────────────────────────────────────────────────────
@@ -144,6 +164,7 @@ export function showToast(msg, type) {
 // ─────────────────────────────────────────────────────────
 document.getElementById('nav-plantilla').addEventListener('click', () => switchTab('plantilla'));
 document.getElementById('nav-draft').addEventListener('click',     () => switchTab('draft'));
+document.getElementById('nav-ranking').addEventListener('click', () => switchTab('ranking'));
 
 // ─────────────────────────────────────────────────────────
 // ARRANQUE
