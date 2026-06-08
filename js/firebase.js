@@ -2,9 +2,12 @@
 // FIREBASE CONFIG
 // Rellena estos valores con los de tu proyecto en Firebase Console
 // ─────────────────────────────────────────────────────────
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+// import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, set, get, onValue, runTransaction }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBTutsjUcgg0UjIwDXtur2o9nnyEp2Cge4",
@@ -13,11 +16,12 @@ const firebaseConfig = {
   projectId: "draft-mundial-2026-4da29",
   storageBucket: "draft-mundial-2026-4da29.firebasestorage.app",
   messagingSenderId: "785731497516",
-  appId: "1:785731497516:web:1c7b8fda3a1586833beb89",
-  measurementId: "G-L4PH82GMRR"
+  appId: "1:785731497516:web:85b486024de29acb3beb89",
+  measurementId: "G-LPVRSB373M"
 };
 
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 const db  = getDatabase(app);
 
 // ─────────────────────────────────────────────────────────
