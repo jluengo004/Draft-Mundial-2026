@@ -1,41 +1,69 @@
 // ─────────────────────────────────────────────────────────
-// STATE — sincronizado con Firebase Realtime Database
-//
-// Estructura en DB:
-//   /draft/order       → string[]   orden completo de 153 turnos
-//   /draft/picks       → Pick[]     [{pickNum, user, playerId}]
-//   /draft/currentTurn → number
-//   /nicknames         → {user: nick}
-//   /pitch/{user}      → {slotId: playerId}  (alineaciones locales por usuario)
+// IMPORTS — todo desde CDN, compatible con GitHub Pages
 // ─────────────────────────────────────────────────────────
-import { dbGet, dbSet, dbSetIfAbsent, dbListen } from './firebase.js';
+import { initializeApp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, get, onValue, runTransaction }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
 import { USERS } from '../data/users.js';
 
+// ─────────────────────────────────────────────────────────
+// FIREBASE INIT
+// ─────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyBTutsjUcgg0UjIwDXtur2o9nnyEp2Cge4",
+  authDomain:        "draft-mundial-2026-4da29.firebaseapp.com",
+  databaseURL:       "https://draft-mundial-2026-4da29-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "draft-mundial-2026-4da29",
+  storageBucket:     "draft-mundial-2026-4da29.firebasestorage.app",
+  messagingSenderId: "785731497516",
+  appId:             "1:785731497516:web:85b486024de29acb3beb89"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ─────────────────────────────────────────────────────────
+// DB HELPERS
+// ─────────────────────────────────────────────────────────
+async function dbGet(path) {
+  const snap = await get(ref(db, path));
+  return snap.exists() ? snap.val() : null;
+}
+
+async function dbSet(path, value) {
+  await set(ref(db, path), value);
+}
+
+function dbListen(path, callback) {
+  return onValue(ref(db, path), snap => {
+    callback(snap.exists() ? snap.val() : null);
+  });
+}
+
+// ─────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────
 export const MAX_PICKS = 17;
 
-// ── Estado local (reflejo del DB) ──
+// ─────────────────────────────────────────────────────────
+// STATE (reflejo local del DB)
+// ─────────────────────────────────────────────────────────
 export let state = {
-  draftOrder:   [],
-  picks:        [],
-  currentTurn:  0,
+  draftOrder:  [],
+  picks:       [],
+  currentTurn: 0,
 };
 
 export let nicknames = {};
 
-// ── Listeners activos (para limpiarlos si hiciera falta) ──
 let _unsubDraft = null;
 
 // ─────────────────────────────────────────────────────────
-// INICIALIZACIÓN
+// INIT — genera draft order si no existe y suscribe cambios
 // ─────────────────────────────────────────────────────────
-
-/**
- * Genera el orden del draft (si no existe en DB) y
- * suscribe a cambios en tiempo real.
- * @param {function} onStateChange  callback al recibir cambios del draft
- */
 export async function initState(onStateChange) {
-  // Genera el draftOrder solo si aún no existe en DB
   const existing = await dbGet('draft/order');
   if (!existing) {
     const order = _generateDraftOrder();
@@ -44,11 +72,9 @@ export async function initState(onStateChange) {
     await dbSet('draft/currentTurn', 0);
   }
 
-  // Carga nicknames
   const nicks = await dbGet('nicknames');
-  if (nicks) nicknames = nicks;
+  if (nicks) Object.assign(nicknames, nicks);
 
-  // Suscribe al nodo /draft en tiempo real
   if (_unsubDraft) _unsubDraft();
   _unsubDraft = dbListen('draft', data => {
     if (!data) return;
@@ -71,15 +97,9 @@ function _generateDraftOrder() {
 // ─────────────────────────────────────────────────────────
 // PICKS
 // ─────────────────────────────────────────────────────────
-
-/**
- * Registra un pick. Valida en cliente antes de escribir.
- * El servidor (Firebase Rules) debería validar también.
- * Devuelve null si ok, o string con el error.
- */
 export async function submitPick(currentUser, player, PLAYERS_RAW) {
   const turn = state.currentTurn;
-  if (turn >= state.draftOrder.length)     return 'El draft ha terminado';
+  if (turn >= state.draftOrder.length)        return 'El draft ha terminado';
   if (state.draftOrder[turn] !== currentUser) return 'No es tu turno';
 
   const draftedIds  = new Set(state.picks.map(p => p.playerId));
@@ -88,22 +108,20 @@ export async function submitPick(currentUser, player, PLAYERS_RAW) {
     myPicks.map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId)?.country)
   );
 
-  if (draftedIds.has(player.id))          return 'Jugador ya fichado';
-  if (myCountries.has(player.country))    return 'Ya tienes un jugador de ' + player.country;
-  if (myPicks.length >= MAX_PICKS)        return 'Ya tienes ' + MAX_PICKS + ' jugadores';
+  if (draftedIds.has(player.id))       return 'Jugador ya fichado';
+  if (myCountries.has(player.country)) return 'Ya tienes un jugador de ' + player.country;
+  if (myPicks.length >= MAX_PICKS)     return 'Ya tienes ' + MAX_PICKS + ' jugadores';
 
-  // Escritura atómica: añade el pick y avanza el turno
   const newPicks = [...state.picks, { pickNum: turn + 1, user: currentUser, playerId: player.id }];
   await dbSet('draft/picks',       newPicks);
   await dbSet('draft/currentTurn', turn + 1);
 
-  return null; // sin error
+  return null;
 }
 
 // ─────────────────────────────────────────────────────────
 // NICKNAMES
 // ─────────────────────────────────────────────────────────
-
 export async function saveNickname(user, nick) {
   nicknames[user] = nick;
   await dbSet('nicknames/' + user, nick);
@@ -111,7 +129,7 @@ export async function saveNickname(user, nick) {
 
 export async function loadNicknames() {
   const data = await dbGet('nicknames');
-  if (data) nicknames = data;
+  if (data) Object.assign(nicknames, data);
   return nicknames;
 }
 
@@ -120,9 +138,8 @@ export function displayName(user) {
 }
 
 // ─────────────────────────────────────────────────────────
-// PITCH ASSIGNMENT (se guarda en DB bajo /pitch/{user})
+// PITCH ASSIGNMENT
 // ─────────────────────────────────────────────────────────
-
 export async function savePitchAssignment(user, assignment) {
   await dbSet('pitch/' + user, assignment);
 }
