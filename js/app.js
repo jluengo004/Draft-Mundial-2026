@@ -10,14 +10,16 @@ import {
 } from './state.js';
 import { initPlantilla, renderPlantilla } from './plantilla.js';
 import { initDraft, renderDraft }         from './draft.js';
-import { initRanking, renderRanking } from './ranking.js';
+import { initRanking, renderRanking }     from './ranking.js';
 
-// Stable player IDs (se asignan una sola vez al arrancar)
+// Stable player IDs
 PLAYERS_RAW.forEach((p, i) => { p.id = i; });
 
-// ── Estado global compartido entre módulos ──
-export let currentUser       = null;
-export let plantillaViewUser = null;
+// ── Estado global ──
+export let currentUser        = null;
+export let plantillaViewUser  = null;
+// Alineaciones de TODOS los usuarios (necesario para cálculo de ranking)
+export let pitchAssignments   = {};
 
 // ─────────────────────────────────────────────────────────
 // LOGIN
@@ -41,17 +43,9 @@ async function initLogin() {
 
   document.getElementById('btn-enter').addEventListener('click', async () => {
     if (!currentUser) return;
-    const skipKey = 'skip_nick_' + currentUser;
-    if (!localStorage.getItem(skipKey) && !displayName(currentUser).includes(' ') === false) {
-      // Mostrar pantalla de apodo si nunca la ha visto
-    }
-    // Siempre mostrar nickname screen la primera vez
     const hasNick = localStorage.getItem('nick_set_' + currentUser);
-    if (!hasNick) {
-      showNicknameScreen();
-    } else {
-      await bootApp();
-    }
+    if (!hasNick) showNicknameScreen();
+    else          await bootApp();
   });
 }
 
@@ -63,25 +57,19 @@ function showNicknameScreen() {
   input.focus();
   input.select();
 
-  document.getElementById('btn-save-nickname').onclick = async () => {
+  const finish = async () => {
     const nick = input.value.trim();
     if (nick) await saveNickname(currentUser, nick);
     localStorage.setItem('nick_set_' + currentUser, '1');
     document.getElementById('screen-nickname').classList.remove('active');
     await bootApp();
   };
-
-  document.getElementById('btn-skip-nickname').onclick = async () => {
-    const nick = input.value.trim();
-    if (nick) await saveNickname(currentUser, nick);
-    localStorage.setItem('nick_set_' + currentUser, '1');
-    document.getElementById('screen-nickname').classList.remove('active');
-    await bootApp();
-  };
+  document.getElementById('btn-save-nickname').onclick = finish;
+  document.getElementById('btn-skip-nickname').onclick = finish;
 }
 
 // ─────────────────────────────────────────────────────────
-// BOOT — conecta Firebase y arranca la app
+// BOOT
 // ─────────────────────────────────────────────────────────
 async function bootApp() {
   showToast('Conectando…');
@@ -92,64 +80,73 @@ async function bootApp() {
   document.getElementById('screen-main').classList.add('active');
   document.getElementById('topbar-username').textContent = displayName(currentUser);
 
-  // Carga alineación del usuario actual desde DB
-  const pitchData = await loadPitchAssignment(currentUser);
-
+  // Carga alineación del usuario actual
+  pitchAssignments[currentUser] = await loadPitchAssignment(currentUser);
   plantillaViewUser = currentUser;
 
-  // Inicializa los dos módulos pasándoles lo que necesitan
-  initPlantilla({ currentUser, PLAYERS_RAW, USERS, state, plantillaViewUser, pitchData, displayName });
-  initDraft({ currentUser, PLAYERS_RAW, USERS, state, displayName, showToast });
-  initRanking({
-  currentUser,
-  PLAYERS_RAW,
-  USERS,
-  state,
-  displayName,
-  showToast,
-  pitchAssignments: state.pitchAssignments || {}
-});
+  // Contexto compartido entre módulos
+  const ctx = {
+    currentUser,
+    PLAYERS_RAW,
+    USERS,
+    state,
+    MAX_PICKS,
+    displayName,
+    showToast,
+    get plantillaViewUser() { return plantillaViewUser; },
+    set plantillaViewUser(v) { plantillaViewUser = v; },
+    get pitchAssignments()   { return pitchAssignments; },
+  };
+
+  initPlantilla({ ...ctx, pitchData: pitchAssignments[currentUser] });
+  initDraft(ctx);
+  initRanking(ctx);
+
+  // Cuando el ranking necesita ver alineaciones de otros usuarios, las carga lazy
+  _preloadAllPitchAssignments();
 
   switchTab('plantilla');
 }
 
+// Precarga alineaciones de todos los usuarios en segundo plano
+async function _preloadAllPitchAssignments() {
+  await Promise.all(USERS.map(async u => {
+    if (!pitchAssignments[u]) {
+      pitchAssignments[u] = await loadPitchAssignment(u);
+    }
+  }));
+}
+
 // ─────────────────────────────────────────────────────────
-// CALLBACK DE FIREBASE — se llama cuando cambia /draft en DB
+// FIREBASE CALLBACK
 // ─────────────────────────────────────────────────────────
 function onStateChange() {
-  if (document.getElementById('tab-draft').classList.contains('active')) {
-    renderDraft();
-  }
-  if (document.getElementById('tab-plantilla').classList.contains('active')) {
-    renderPlantilla(plantillaViewUser || currentUser);
-  }
-  if (document.getElementById('tab-ranking')?.classList.contains('active')) {
-    renderRanking();
-  }
+  const active = id => document.getElementById(id)?.classList.contains('active');
+  if (active('tab-draft'))    renderDraft();
+  if (active('tab-plantilla')) renderPlantilla(plantillaViewUser || currentUser);
+  if (active('tab-ranking'))   renderRanking();
 }
 
 // ─────────────────────────────────────────────────────────
 // TAB SWITCHING
 // ─────────────────────────────────────────────────────────
 export function switchTab(tab) {
-  document.querySelectorAll('.nav-tab').forEach(t => {
-    t.classList.remove('active');
+  document.querySelectorAll('.nav-tab').forEach((t, i) => {
+    t.classList.toggle('active',
+      (i === 0 && tab === 'plantilla') ||
+      (i === 1 && tab === 'draft')     ||
+      (i === 2 && tab === 'ranking')
+    );
   });
-  document.getElementById('nav-' + tab)?.classList.add('active');
-
-  document.querySelectorAll('.tab-content')
-  .forEach(c => c.classList.remove('active'));
-
-  document.getElementById('tab-' + tab)
-    ?.classList.add('active');
-
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
   if (tab === 'plantilla') renderPlantilla(plantillaViewUser || currentUser);
-  if (tab === 'draft') renderDraft();
-  if (tab === 'ranking') renderRanking();
+  if (tab === 'draft')     renderDraft();
+  if (tab === 'ranking')   renderRanking();
 }
 
 // ─────────────────────────────────────────────────────────
-// TOAST (compartido entre módulos)
+// TOAST
 // ─────────────────────────────────────────────────────────
 export function showToast(msg, type) {
   const t = document.getElementById('toast');
@@ -164,7 +161,7 @@ export function showToast(msg, type) {
 // ─────────────────────────────────────────────────────────
 document.getElementById('nav-plantilla').addEventListener('click', () => switchTab('plantilla'));
 document.getElementById('nav-draft').addEventListener('click',     () => switchTab('draft'));
-document.getElementById('nav-ranking').addEventListener('click', () => switchTab('ranking'));
+document.getElementById('nav-ranking').addEventListener('click',   () => switchTab('ranking'));
 
 // ─────────────────────────────────────────────────────────
 // ARRANQUE

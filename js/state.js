@@ -27,16 +27,16 @@ const db  = getDatabase(app);
 // ─────────────────────────────────────────────────────────
 // DB HELPERS
 // ─────────────────────────────────────────────────────────
-async function dbGet(path) {
+export async function dbGet(path) {
   const snap = await get(ref(db, path));
   return snap.exists() ? snap.val() : null;
 }
 
-async function dbSet(path, value) {
+export async function dbSet(path, value) {
   await set(ref(db, path), value);
 }
 
-function dbListen(path, callback) {
+export function dbListen(path, callback) {
   return onValue(ref(db, path), snap => {
     callback(snap.exists() ? snap.val() : null);
   });
