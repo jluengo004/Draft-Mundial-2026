@@ -87,29 +87,10 @@ export async function initState(onStateChange) {
 }
 
 function _generateDraftOrder() {
-  // Mapa explícito apodo → nombre completo (cubre casos con apellidos compuestos)
-  const NICK_TO_FULL = {
-    'Urtzi S'    : 'Urtzi Suaga',
-    'Markel R'   : 'Markel Rodeño',
-    'Oier E'     : 'Oier Ezkerro',
-    'Aritz G'    : 'Aritz Gutierrez',
-    'Alberto GdC': 'Jokin Garcia de Cortazar',
-    'Urko F'     : 'Urko Fernandez',
-    'Ortzi M'    : 'Ortiz Mardones',
-    'Mikel P'    : 'Mikel Palomero',
-    'Jon L'      : 'Jon Luengo',
-  };
-
-  const round1 = DRAFT_ORDER.map(shortName => {
-    const full = NICK_TO_FULL[shortName];
-    if (!full) console.warn('DRAFT_ORDER: sin mapeo para', shortName);
-    return full || shortName;
-  });
-
   // Snake draft: ronda par = orden normal, impar = inverso
   const order = [];
   for (let round = 0; round < MAX_PICKS; round++) {
-    order.push(...(round % 2 === 0 ? [...round1] : [...round1].reverse()));
+    order.push(...(round % 2 === 0 ? [...DRAFT_ORDER] : [...DRAFT_ORDER].reverse()));
   }
   return order;
 }
