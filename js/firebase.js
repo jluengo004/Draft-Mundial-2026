@@ -7,13 +7,14 @@ import { getDatabase, ref, set, get, onValue, runTransaction }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 const firebaseConfig = {
-  apiKey:            "TU_API_KEY",
-  authDomain:        "TU_PROJECT.firebaseapp.com",
-  databaseURL:       "https://TU_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:         "TU_PROJECT",
-  storageBucket:     "TU_PROJECT.appspot.com",
-  messagingSenderId: "TU_SENDER_ID",
-  appId:             "TU_APP_ID"
+  apiKey: "AIzaSyBTutsjUcgg0UjIwDXtur2o9nnyEp2Cge4",
+  authDomain: "draft-mundial-2026-4da29.firebaseapp.com",
+  databaseURL: "https://draft-mundial-2026-4da29-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "draft-mundial-2026-4da29",
+  storageBucket: "draft-mundial-2026-4da29.firebasestorage.app",
+  messagingSenderId: "785731497516",
+  appId: "1:785731497516:web:1c7b8fda3a1586833beb89",
+  measurementId: "G-L4PH82GMRR"
 };
 
 const app = initializeApp(firebaseConfig);
