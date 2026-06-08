@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mundial 2026 — Draft</title>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mundial 2026 — Draft</title>
+<style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap');
 
   :root {
@@ -33,7 +33,7 @@
 
   /* ── SCREEN SYSTEM ── */
   .screen { display:none; min-height:100vh; }
-  .screen.active { display:flex; flex-direction:column; }
+  .screen.active { display:flex; flex-direction:column; overflow:hidden; }
 
   /* ── LOGIN SCREEN ── */
   #screen-login {
@@ -149,6 +149,8 @@
   /* ── MAIN SCREEN ── */
   #screen-main {
     background: var(--bg);
+    height: 100vh;
+    overflow: hidden;
   }
 
   .topbar {
@@ -203,13 +205,25 @@
   .nav-tab:hover { color: var(--text); }
   .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-  .tab-content { display:none; flex:1; }
-  .tab-content.active { display:flex; flex-direction:column; }
+  .tab-content {
+    display: none !important;
+    flex: 1;
+    min-height: 0;
+  }
+  .tab-content.active {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
 
   /* ── PLANTILLA TAB ── */
   #tab-plantilla {
     padding: 28px;
-    overflow-y:auto;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
   }
 
   .plantilla-header {
@@ -312,10 +326,11 @@
 
   /* ── DRAFT TAB ── */
   #tab-draft {
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-    height: calc(100vh - 113px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
   }
 
   .draft-status-bar {
@@ -879,7 +894,7 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.65; }
   }
-  </style>
+</style>
 </head>
 <body>
 <!-- LOGIN SCREEN -->
