@@ -6,7 +6,8 @@ import { initializeApp }
 import { getDatabase, ref, set, get, onValue, runTransaction }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-import { USERS } from '../data/users.js';
+import { USERS }       from '../data/users.js';
+import { DRAFT_ORDER } from '../data/draft-orden.js';
 
 // ─────────────────────────────────────────────────────────
 // FIREBASE INIT
@@ -86,10 +87,29 @@ export async function initState(onStateChange) {
 }
 
 function _generateDraftOrder() {
-  const shuffled = [...USERS].sort(() => Math.random() - 0.5);
+  // Mapa explícito apodo → nombre completo (cubre casos con apellidos compuestos)
+  const NICK_TO_FULL = {
+    'Urtzi S'    : 'Urtzi Suaga',
+    'Markel R'   : 'Markel Rodeño',
+    'Oier E'     : 'Oier Ezkerro',
+    'Aritz G'    : 'Aritz Gutierrez',
+    'Alberto GdC': 'Jokin Garcia de Cortazar',
+    'Urko F'     : 'Urko Fernandez',
+    'Ortzi M'    : 'Ortiz Mardones',
+    'Mikel P'    : 'Mikel Palomero',
+    'Jon L'      : 'Jon Luengo',
+  };
+
+  const round1 = DRAFT_ORDER.map(shortName => {
+    const full = NICK_TO_FULL[shortName];
+    if (!full) console.warn('DRAFT_ORDER: sin mapeo para', shortName);
+    return full || shortName;
+  });
+
+  // Snake draft: ronda par = orden normal, impar = inverso
   const order = [];
   for (let round = 0; round < MAX_PICKS; round++) {
-    order.push(...(round % 2 === 0 ? [...shuffled] : [...shuffled].reverse()));
+    order.push(...(round % 2 === 0 ? [...round1] : [...round1].reverse()));
   }
   return order;
 }
