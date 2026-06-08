@@ -914,8 +914,8 @@
     <div class="topbar-user">Jugando como <span id="topbar-username" style="cursor:pointer" title="Editar apodo">—</span></div>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="switchTab('plantilla')">Plantilla</button>
-    <button class="nav-tab" onclick="switchTab('draft')">Draft</button>
+    <button class="nav-tab active" id="nav-plantilla">Plantilla</button>
+    <button class="nav-tab" id="nav-draft">Draft</button>
   </div>
 
   <!-- PLANTILLA TAB -->
@@ -1088,12 +1088,12 @@
       <!-- Player list -->
       <div class="draft-player-panel">
         <div class="draft-search-bar">
-          <input type="text" class="draft-search-input" id="search-input" placeholder="Buscar jugador..." oninput="filterPlayers()">
-          <button class="filter-pos-btn active" onclick="togglePosFilter(this,'ALL')" data-pos="ALL">TODOS</button>
-          <button class="filter-pos-btn" onclick="togglePosFilter(this,'PO')" data-pos="PO" style="color:#ff9944">PO</button>
-          <button class="filter-pos-btn" onclick="togglePosFilter(this,'DF')" data-pos="DF" style="color:#4499ff">DF</button>
-          <button class="filter-pos-btn" onclick="togglePosFilter(this,'MC')" data-pos="MC" style="color:#44cc88">MC</button>
-          <button class="filter-pos-btn" onclick="togglePosFilter(this,'DC')" data-pos="DC" style="color:#cc44ff">DC</button>
+          <input type="text" class="draft-search-input" id="search-input" placeholder="Buscar jugador..." >
+          <button class="filter-pos-btn active" data-pos="ALL">TODOS</button>
+          <button class="filter-pos-btn" data-pos="PO" style="color:#ff9944">PO</button>
+          <button class="filter-pos-btn" data-pos="DF" style="color:#4499ff">DF</button>
+          <button class="filter-pos-btn" data-pos="MC" style="color:#44cc88">MC</button>
+          <button class="filter-pos-btn" data-pos="DC" style="color:#cc44ff">DC</button>
         </div>
         <div class="draft-player-list" id="draft-player-list"></div>
       </div>
@@ -1118,8 +1118,8 @@
     <div class="modal-title">CONFIRMAR PICK</div>
     <div class="modal-body" id="modal-body">¿Quieres fichar a este jugador?</div>
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal()">CANCELAR</button>
-      <button class="btn-danger" onclick="confirmPick()">FICHAR</button>
+      <button class="btn-secondary" id="btn-cancel-modal">CANCELAR</button>
+      <button class="btn-danger" id="btn-confirm-pick">FICHAR</button>
     </div>
   </div>
 </div>
@@ -1127,185 +1127,34 @@
 <!-- Toast -->
 <div id="toast"></div>
 <script type="module">
-// ────────────────────────────────────────────────────────
-// DATA
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// IMPORTS
+// ─────────────────────────────────────────────────────────
 import { PLAYERS_RAW } from './data/players.js';
-import { USERS } from './data/users.js';
+import { USERS }       from './data/users.js';
+import {
+  MAX_PICKS, state, nicknames,
+  initState, submitPick,
+  saveNickname, loadNicknames, displayName,
+  savePitchAssignment, loadPitchAssignment
+} from './js/state.js';
 
-const MAX_PICKS = 17;
-// Add unique ids
-PLAYERS_RAW.forEach((p,i) => p.id = i);
+// Stable player IDs
+PLAYERS_RAW.forEach((p, i) => { p.id = i; });
 
-// ────────────────────────────────────────────────────────
-// STATE — stored in localStorage so it persists
-// ────────────────────────────────────────────────────────
-const STORAGE_KEY = 'mundial2026_draft_v3';
-const NICKNAME_KEY = 'mundial2026_nicknames';
+// ─────────────────────────────────────────────────────────
+// APP STATE
+// ─────────────────────────────────────────────────────────
+let currentUser          = null;
+let plantillaViewUser    = null;
+let selectedSquadPlayerId = null;
+let posFilter            = 'ALL';
+let pendingPlayer        = null;
+let pitchAssignment      = {};   // {user: {slotId: playerId}} — cargado de DB
 
-function loadNicknames() {
-  try { return JSON.parse(localStorage.getItem(NICKNAME_KEY)) || {}; }
-  catch(e) { return {}; }
-}
-let nicknames = loadNicknames();
-
-function saveNicknames() {
-  localStorage.setItem(NICKNAME_KEY, JSON.stringify(nicknames));
-}
-
-function displayName(user) {
-  return nicknames[user] || user;
-}
-
-function loadState() {
-  try {
-    const s = localStorage.getItem(STORAGE_KEY);
-    if (s) return JSON.parse(s);
-  } catch(e) {}
-  return null;
-}
-
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-let state = loadState() || {
-  draftOrder: [],   // array of user names for all picks (9*17 = 153 entries)
-  picks: [],        // [{pickNum, user, playerId}]
-  currentTurn: 0,   // index into draftOrder
-};
-
-// If no draft order yet, generate it on first visit
-function generateDraftOrder() {
-  if (state.draftOrder.length > 0) return;
-  // shuffle users for round 1
-  const shuffled = [...USERS].sort(() => Math.random() - 0.5);
-  const order = [];
-  for (let round = 0; round < MAX_PICKS; round++) {
-    const roundOrder = round % 2 === 0 ? [...shuffled] : [...shuffled].reverse();
-    order.push(...roundOrder);
-  }
-  state.draftOrder = order;
-  saveState();
-}
-
-// ────────────────────────────────────────────────────────
-// CURRENT USER
-// ────────────────────────────────────────────────────────
-let currentUser = null;
-
-// ────────────────────────────────────────────────────────
-// LOGIN SCREEN INIT
-// ────────────────────────────────────────────────────────
-function initLogin() {
-  const grid = document.getElementById('user-grid');
-  USERS.forEach(u => {
-    const btn = document.createElement('button');
-    btn.className = 'user-btn';
-    btn.textContent = u;
-    btn.onclick = () => {
-      document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      document.getElementById('btn-enter').disabled = false;
-      currentUser = u;
-    };
-    grid.appendChild(btn);
-  });
-
-  document.getElementById('btn-enter').onclick = () => {
-    if (!currentUser) return;
-
-    if (!nicknames[currentUser]) {
-      showNicknameScreen();
-      return;
-    }
-
-    generateDraftOrder();
-    enterMainScreen();
-  };
-}
-
-function showNicknameScreen() {
-  document.getElementById('screen-login').classList.remove('active');
-  document.getElementById('screen-nickname').classList.add('active');
-
-  const input = document.getElementById('nickname-input');
-  input.value = '';
-
-  document.getElementById('btn-save-nickname').onclick = () => {
-    const nickname = input.value.trim();
-    if (!nickname) return;
-
-    nicknames[currentUser] = nickname;
-    saveNicknames();
-
-    document.getElementById('screen-nickname').classList.remove('active');
-    generateDraftOrder();
-    enterMainScreen();
-  };
-}
-
-function enterMainScreen() {
-  document.getElementById('screen-login').classList.remove('active');
-  document.getElementById('screen-main').classList.add('active');
-  document.getElementById('topbar-username').textContent = displayName(currentUser);
-  document.getElementById('topbar-username').onclick = () => {
-    const nuevo = prompt('Editar apodo', nicknames[currentUser] || displayName(currentUser));
-    if (nuevo === null) return;
-    const limpio = nuevo.trim();
-    if (!limpio) return;
-    nicknames[currentUser] = limpio;
-    saveNicknames();
-    document.getElementById('topbar-username').textContent = displayName(currentUser);
-    if (typeof initPlantilla === 'function') initPlantilla();
-    if (typeof renderDraft === 'function') renderDraft();
-    if (typeof renderDraftStatusBar === 'function') renderDraftStatusBar();
-    if (typeof renderDraftOrderRow === 'function') renderDraftOrderRow();
-    if (typeof renderDraftPicks === 'function') renderDraftPicks();
-  };
-  initPlantilla();
-  initDraft();
-}
-
-// ────────────────────────────────────────────────────────
-// TAB SWITCHING
-// ────────────────────────────────────────────────────────
-function switchTab(tab) {
-  document.querySelectorAll('.nav-tab').forEach((t,i) => {
-    t.classList.toggle('active', (i===0 && tab==='plantilla') || (i===1 && tab==='draft'));
-  });
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
-  if (tab === 'plantilla') renderPlantilla(plantillaViewUser || currentUser);
-  if (tab === 'draft') renderDraft();
-}
-
-// ────────────────────────────────────────────────────────
-// PLANTILLA TAB
-// ────────────────────────────────────────────────────────
-let plantillaViewUser = null;
-
-function initPlantilla() {
-  plantillaViewUser = currentUser;
-  const sel = document.getElementById('plantilla-user-selector');
-  sel.innerHTML = '';
-  USERS.forEach(u => {
-    const btn = document.createElement('button');
-    btn.className = 'user-pill' + (u === currentUser ? ' active' : '');
-    btn.textContent = displayName(u);
-    btn.onclick = () => {
-      document.querySelectorAll('.user-pill').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      plantillaViewUser = u;
-      renderPlantilla(u);
-    };
-    sel.appendChild(btn);
-  });
-  renderPlantilla(currentUser);
-}
-
-// ── Pitch slot definitions: slotId → expected position ──
-// ── Pitch slot definitions ──
+// ─────────────────────────────────────────────────────────
+// PITCH SLOTS
+// ─────────────────────────────────────────────────────────
 const PITCH_SLOTS = [
   { id: 'PO-0', pos: 'PO' },
   { id: 'DF-0', pos: 'DF' }, { id: 'DF-1', pos: 'DF' },
@@ -1314,27 +1163,142 @@ const PITCH_SLOTS = [
   { id: 'DC-0', pos: 'DC' }, { id: 'DC-1', pos: 'DC' }, { id: 'DC-2', pos: 'DC' },
 ];
 
-// ── Persist pitch assignment per user ──
-const PITCH_KEY = 'mundial2026_pitch_v2';
-let pitchAssignment = (() => {
-  try { return JSON.parse(localStorage.getItem(PITCH_KEY)) || {}; } catch(e) { return {}; }
-})();
-function savePitch() { localStorage.setItem(PITCH_KEY, JSON.stringify(pitchAssignment)); }
+// ─────────────────────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────────────────────
+async function initLogin() {
+  await loadNicknames();
+  const grid = document.getElementById('user-grid');
+  USERS.forEach(u => {
+    const btn = document.createElement('button');
+    btn.className  = 'user-btn';
+    btn.textContent = displayName(u);
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('btn-enter').disabled = false;
+      currentUser = u;
+    });
+    grid.appendChild(btn);
+  });
 
-// ── Currently selected player id (for manual assignment) ──
-let selectedSquadPlayerId = null;
+  document.getElementById('btn-enter').addEventListener('click', async () => {
+    if (!currentUser) return;
+    const skipKey = 'skip_nick_' + currentUser;
+    if (!localStorage.getItem(skipKey) && !nicknames[currentUser]) {
+      showNicknameScreen(skipKey);
+    } else {
+      await bootApp();
+    }
+  });
+}
 
-// ── Highlight slots that match the selected player's position ──
+function showNicknameScreen(skipKey) {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-nickname').classList.add('active');
+  const input = document.getElementById('nickname-input');
+  input.value = '';
+  input.focus();
+
+  document.getElementById('btn-save-nickname').onclick = async () => {
+    const nick = input.value.trim();
+    if (!nick) return;
+    await saveNickname(currentUser, nick);
+    document.getElementById('screen-nickname').classList.remove('active');
+    await bootApp();
+  };
+  document.getElementById('btn-skip-nickname').onclick = async () => {
+    const nick = input.value.trim();
+    if (nick) await saveNickname(currentUser, nick);
+    localStorage.setItem(skipKey, '1');
+    document.getElementById('screen-nickname').classList.remove('active');
+    await bootApp();
+  };
+}
+
+async function bootApp() {
+  // Inicia Firebase state y suscribe a cambios en tiempo real
+  showToast('Conectando…');
+  await initState(onStateChange);
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-main').classList.add('active');
+  document.getElementById('topbar-username').textContent = displayName(currentUser);
+
+  // Carga alineación del usuario
+  pitchAssignment[currentUser] = await loadPitchAssignment(currentUser);
+
+  plantillaViewUser = currentUser;
+  initPlantillaSelector();
+  renderPlantilla(currentUser);
+  renderDraft();
+}
+
+/** Callback cuando Firebase emite un cambio en /draft */
+function onStateChange(newState) {
+  if (document.getElementById('tab-draft').classList.contains('active')) {
+    renderDraft();
+  }
+  if (document.getElementById('tab-plantilla').classList.contains('active')) {
+    renderPlantilla(plantillaViewUser || currentUser);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'plantilla') || (i === 1 && tab === 'draft'));
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'plantilla') renderPlantilla(plantillaViewUser || currentUser);
+  if (tab === 'draft')     renderDraft();
+}
+
+// ─────────────────────────────────────────────────────────
+// PLANTILLA
+// ─────────────────────────────────────────────────────────
+function initPlantillaSelector() {
+  const sel = document.getElementById('plantilla-user-selector');
+  sel.innerHTML = '';
+  USERS.forEach(u => {
+    const btn = document.createElement('button');
+    btn.className = 'user-pill' + (u === currentUser ? ' active' : '');
+    btn.textContent = displayName(u);
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('.user-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      plantillaViewUser = u;
+      selectedSquadPlayerId = null;
+      highlightCompatibleSlots(null);
+      if (!pitchAssignment[u]) {
+        pitchAssignment[u] = await loadPitchAssignment(u);
+      }
+      renderPlantilla(u);
+    });
+    sel.appendChild(btn);
+  });
+}
+
 function highlightCompatibleSlots(pos) {
   PITCH_SLOTS.forEach(slot => {
     const g = document.getElementById('slot-' + slot.id);
     if (!g) return;
-    if (pos && slot.pos === pos) {
-      g.classList.add('can-receive');
-    } else {
-      g.classList.remove('can-receive');
-    }
+    pos && slot.pos === pos ? g.classList.add('can-receive') : g.classList.remove('can-receive');
   });
+}
+
+function setHint(msg, color) {
+  const el = document.getElementById('bench-hint');
+  if (!el) return;
+  if (msg === null) {
+    el.textContent = 'Pulsa un suplente para alinearlo · Pulsa un titular para quitarlo';
+    el.style.color = 'var(--muted)';
+  } else {
+    el.textContent = msg;
+    el.style.color = color || 'var(--muted)';
+  }
 }
 
 function renderPlantilla(user) {
@@ -1347,13 +1311,12 @@ function renderPlantilla(user) {
   document.querySelector('.plantilla-title').textContent =
     user === currentUser ? 'Mi Plantilla' : `Plantilla de ${displayName(user)}`;
 
-  // Validate assignment: remove players no longer in picks
   const assignment = pitchAssignment[user] || {};
   const pickIds = new Set(userPicks.map(p => p.id));
   Object.keys(assignment).forEach(sid => { if (!pickIds.has(assignment[sid])) delete assignment[sid]; });
   pitchAssignment[user] = assignment;
 
-  const assignedIds = new Set(Object.values(assignment)); // playerIds on pitch
+  const assignedIds = new Set(Object.values(assignment));
   const isMe = user === currentUser;
 
   // ── Render SVG slots ──
@@ -1361,7 +1324,7 @@ function renderPlantilla(user) {
     const g = document.getElementById('slot-' + slot.id);
     if (!g) return;
     const playerId = assignment[slot.id];
-    const player = playerId !== undefined ? PLAYERS_RAW.find(p => p.id === playerId) : null;
+    const player   = playerId !== undefined ? PLAYERS_RAW.find(p => p.id === playerId) : null;
     const circleBg = g.querySelector('circle.slot-bg');
     const textPos  = g.querySelector('text.slot-pos');
     const textName = g.querySelector('text.slot-name');
@@ -1373,27 +1336,25 @@ function renderPlantilla(user) {
       circleBg.style.fill = '#12121a';
       textPos.setAttribute('opacity', '0.35');
       const shortName = player.name.split(' ').pop();
-      textName.textContent = shortName.length > 9 ? shortName.slice(0,9)+'…' : shortName;
+      textName.textContent = shortName.length > 9 ? shortName.slice(0, 9) + '…' : shortName;
       textName.setAttribute('opacity', '1');
-      textCtry.textContent = player.country.slice(0,3).toUpperCase();
+      textCtry.textContent = player.country.slice(0, 3).toUpperCase();
       textCtry.setAttribute('opacity', '1');
     } else {
       g.classList.remove('filled'); g.classList.add('empty');
       circleBg.setAttribute('stroke-dasharray', '5 3');
       circleBg.style.fill = 'rgba(10,10,20,0.55)';
       textPos.setAttribute('opacity', '1');
-      if (textName) { textName.textContent = ''; textName.setAttribute('opacity','0'); }
-      if (textCtry) { textCtry.textContent = ''; textCtry.setAttribute('opacity','0'); }
+      if (textName) { textName.textContent = ''; textName.setAttribute('opacity', '0'); }
+      if (textCtry) { textCtry.textContent = ''; textCtry.setAttribute('opacity', '0'); }
     }
 
-    // Click handler
     g.onclick = null;
     g.style.cursor = isMe ? 'pointer' : 'default';
     if (!isMe) return;
 
-    g.onclick = () => {
+    g.onclick = async () => {
       if (selectedSquadPlayerId !== null) {
-        // Try to place selected player here
         const candidate = PLAYERS_RAW.find(p => p.id === selectedSquadPlayerId);
         if (!candidate) return;
         if (candidate.pos !== slot.pos) {
@@ -1401,143 +1362,107 @@ function renderPlantilla(user) {
           setTimeout(() => setHint(null), 1800);
           return;
         }
-        // Remove from any previous slot
         Object.keys(assignment).forEach(k => { if (assignment[k] === selectedSquadPlayerId) delete assignment[k]; });
-        // If slot was occupied, that player goes back to suplentes automatically
         assignment[slot.id] = selectedSquadPlayerId;
         pitchAssignment[user] = assignment;
-        savePitch();
+        await savePitchAssignment(user, assignment);
         selectedSquadPlayerId = null;
         highlightCompatibleSlots(null);
         renderPlantilla(user);
-      } else {
-        // No player selected — click on filled slot removes it
-        if (player) {
-          delete assignment[slot.id];
-          pitchAssignment[user] = assignment;
-          savePitch();
-          renderPlantilla(user);
-        }
+      } else if (player) {
+        delete assignment[slot.id];
+        pitchAssignment[user] = assignment;
+        await savePitchAssignment(user, assignment);
+        renderPlantilla(user);
       }
     };
   });
 
-  // ── Squad panel: titulares & suplentes ──
+  // ── Squad panel ──
   const titulares = userPicks.filter(p => assignedIds.has(p.id));
   const suplentes = userPicks.filter(p => !assignedIds.has(p.id));
-
+  const posOrder  = ['PO', 'DF', 'MC', 'DC'];
   const benchList = document.getElementById('bench-list');
   benchList.innerHTML = '';
 
   if (userPicks.length === 0) {
     benchList.innerHTML = '<div style="font-family:IBM Plex Mono,monospace;font-size:0.7rem;color:var(--muted);padding:8px 0">Aún no tienes jugadores</div>';
-    return;
+    setHint(null); return;
   }
 
-  const posOrder = ['PO','DF','MC','DC'];
+  function makeCard(player, isTitular) {
+    const isSelected = selectedSquadPlayerId === player.id;
+    const card = document.createElement('div');
+    card.className = 'bench-card' + (isSelected ? ' selected-card' : '');
+    card.innerHTML =
+      `<span class="bench-card-pos ${player.pos}">${player.pos}</span>` +
+      `<span class="bench-card-name">${player.name}</span>` +
+      `<span class="bench-card-country">${player.country}</span>`;
+    if (!isMe) return card;
+    card.onclick = async () => {
+      if (isTitular) {
+        const slotId = Object.keys(assignment).find(k => assignment[k] === player.id);
+        if (slotId) { delete assignment[slotId]; pitchAssignment[user] = assignment; await savePitchAssignment(user, assignment); }
+        selectedSquadPlayerId = null;
+        highlightCompatibleSlots(null);
+        renderPlantilla(user);
+      } else {
+        if (isSelected) {
+          selectedSquadPlayerId = null;
+          highlightCompatibleSlots(null);
+          setHint(null);
+        } else {
+          selectedSquadPlayerId = player.id;
+          highlightCompatibleSlots(player.pos);
+          setHint(`Seleccionado: ${player.name} — pulsa un círculo ${player.pos} en el campo`, 'var(--accent)');
+        }
+        renderPlantilla(user);
+      }
+    };
+    return card;
+  }
 
-  // Section: Titulares
   const titleT = document.createElement('div');
   titleT.className = 'squad-section-title';
   titleT.textContent = `Titulares (${titulares.length}/11)`;
   benchList.appendChild(titleT);
 
   if (titulares.length === 0) {
-    const empty = document.createElement('div');
-    empty.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:0.65rem;color:var(--muted);padding:6px 0';
-    empty.textContent = 'Ninguno alineado aún';
-    benchList.appendChild(empty);
+    const e = document.createElement('div');
+    e.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:0.65rem;color:var(--muted);padding:6px 0';
+    e.textContent = 'Ninguno alineado aún';
+    benchList.appendChild(e);
   } else {
-    [...titulares].sort((a,b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos))
-      .forEach(p => benchList.appendChild(makeSquadCard(p, true, isMe, assignment, user)));
+    [...titulares].sort((a, b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos))
+      .forEach(p => benchList.appendChild(makeCard(p, true)));
   }
 
-  // Section: Suplentes
   const titleS = document.createElement('div');
   titleS.className = 'squad-section-title';
   titleS.textContent = `Suplentes (${suplentes.length})`;
   benchList.appendChild(titleS);
 
   if (suplentes.length === 0) {
-    const empty = document.createElement('div');
-    empty.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:0.65rem;color:var(--muted);padding:6px 0';
-    empty.textContent = 'Todos en el campo';
-    benchList.appendChild(empty);
+    const e = document.createElement('div');
+    e.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:0.65rem;color:var(--muted);padding:6px 0';
+    e.textContent = 'Todos en el campo';
+    benchList.appendChild(e);
   } else {
-    [...suplentes].sort((a,b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos))
-      .forEach(p => benchList.appendChild(makeSquadCard(p, false, isMe, assignment, user)));
+    [...suplentes].sort((a, b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos))
+      .forEach(p => benchList.appendChild(makeCard(p, false)));
   }
 
-  // Restore highlight if player still selected
   if (selectedSquadPlayerId !== null) {
     const sel = PLAYERS_RAW.find(p => p.id === selectedSquadPlayerId);
     if (sel) highlightCompatibleSlots(sel.pos);
-  }
-  setHint(null);
-}
-
-function makeSquadCard(player, isTitular, isMe, assignment, user) {
-  const isSelected = selectedSquadPlayerId === player.id;
-  const card = document.createElement('div');
-  card.className = 'bench-card' + (isSelected ? ' selected-card' : '');
-  card.innerHTML = `
-    <span class="bench-card-pos ${player.pos}">${player.pos}</span>
-    <span class="bench-card-name">${player.name}</span>
-    <span class="bench-card-country">${player.country}</span>
-  `;
-  if (!isMe) return card;
-
-  card.onclick = () => {
-    if (isTitular) {
-      // Remove from pitch → moves to suplentes
-      const slotId = Object.keys(assignment).find(k => assignment[k] === player.id);
-      if (slotId) {
-        delete assignment[slotId];
-        pitchAssignment[user] = assignment;
-        savePitch();
-      }
-      selectedSquadPlayerId = null;
-      highlightCompatibleSlots(null);
-      renderPlantilla(user);
-    } else {
-      // Select/deselect for placement
-      if (isSelected) {
-        selectedSquadPlayerId = null;
-        highlightCompatibleSlots(null);
-      } else {
-        selectedSquadPlayerId = player.id;
-        highlightCompatibleSlots(player.pos);
-        setHint(`Seleccionado: ${player.name} — pulsa un círculo ${player.pos} en el campo`, 'var(--accent)');
-      }
-      renderPlantilla(user);
-    }
-  };
-  return card;
-}
-
-function setHint(msg, color) {
-  const el = document.getElementById('bench-hint');
-  if (!el) return;
-  if (msg === null) {
-    if (selectedSquadPlayerId !== null) return; // keep existing hint
-    el.textContent = 'Pulsa un suplente para alinearlo · Pulsa un titular para quitarlo';
-    el.style.color = 'var(--muted)';
   } else {
-    el.textContent = msg;
-    el.style.color = color || 'var(--muted)';
+    setHint(null);
   }
 }
 
-// ────────────────────────────────────────────────────────
-// DRAFT TAB
-// ────────────────────────────────────────────────────────
-let posFilter = 'ALL';
-let pendingPlayer = null;
-
-function initDraft() {
-  renderDraft();
-}
-
+// ─────────────────────────────────────────────────────────
+// DRAFT
+// ─────────────────────────────────────────────────────────
 function renderDraft() {
   renderDraftStatusBar();
   renderDraftOrderRow();
@@ -1546,45 +1471,43 @@ function renderDraft() {
 }
 
 function renderDraftStatusBar() {
-  const turn = state.currentTurn;
-  const total = state.draftOrder.length;
-  const isDone = turn >= total;
-  const currentPickUser = isDone ? '—' : state.draftOrder[turn];
-  const round = isDone ? MAX_PICKS : Math.floor(turn / USERS.length) + 1;
-  const myPicks = state.picks.filter(p => p.user === currentUser).length;
+  const turn          = state.currentTurn;
+  const total         = state.draftOrder.length;
+  const isDone        = turn >= total;
+  const currentPickUser = isDone ? null : state.draftOrder[turn];
+  const round         = isDone ? MAX_PICKS : Math.floor(turn / USERS.length) + 1;
+  const myPicks       = state.picks.filter(p => p.user === currentUser).length;
 
-  document.getElementById('ds-turn-num').textContent = isDone ? total : turn + 1;
-  document.getElementById('ds-round').textContent = round;
+  document.getElementById('ds-turn-num').textContent   = isDone ? total : turn + 1;
+  document.getElementById('ds-round').textContent      = round;
   document.getElementById('ds-current-user').textContent = currentPickUser ? displayName(currentPickUser) : '—';
-  document.getElementById('ds-my-picks').textContent = myPicks;
+  document.getElementById('ds-my-picks').textContent   = myPicks;
 
   const ind = document.getElementById('draft-turn-indicator');
   if (isDone) {
     ind.textContent = 'DRAFT COMPLETO';
-    ind.className = 'draft-turn-indicator done';
+    ind.className   = 'draft-turn-indicator done';
     document.getElementById('draft-complete-banner').classList.add('show');
   } else if (currentPickUser === currentUser) {
     ind.textContent = 'TU TURNO';
-    ind.className = 'draft-turn-indicator my-turn';
+    ind.className   = 'draft-turn-indicator my-turn';
   } else {
     ind.textContent = 'ESPERANDO';
-    ind.className = 'draft-turn-indicator other-turn';
+    ind.className   = 'draft-turn-indicator other-turn';
   }
 }
 
 function renderDraftOrderRow() {
-  const row = document.getElementById('draft-order-row');
+  const row   = document.getElementById('draft-order-row');
   row.innerHTML = '';
-  const turn = state.currentTurn;
+  const turn  = state.currentTurn;
   const total = state.draftOrder.length;
-  // show window: past 3, current, next 15
   const start = Math.max(0, turn - 3);
-  const end = Math.min(total, turn + 16);
+  const end   = Math.min(total, turn + 16);
   for (let i = start; i < end; i++) {
     const chip = document.createElement('div');
-    const u = state.draftOrder[i];
-    chip.className = 'draft-order-chip' + (i === turn ? ' current' : '') + (i < turn ? ' done-chip' : '');
-    chip.textContent = `#${i+1} ${displayName(u)}`;
+    chip.className  = 'draft-order-chip' + (i === turn ? ' current' : '') + (i < turn ? ' done-chip' : '');
+    chip.textContent = `#${i + 1} ${displayName(state.draftOrder[i])}`;
     row.appendChild(chip);
   }
 }
@@ -1602,13 +1525,12 @@ function renderDraftPicks() {
     if (!player) return;
     const row = document.createElement('div');
     row.className = 'pick-row';
-    row.innerHTML = `
-      <span class="pick-num">#${pick.pickNum}</span>
-      <span class="pick-user">${displayName(pick.user)}</span>
-      <span class="pick-pos ${player.pos}">${player.pos}</span>
-      <span class="pick-player">${player.name}</span>
-      <span class="pick-country">${player.country}</span>
-    `;
+    row.innerHTML =
+      `<span class="pick-num">#${pick.pickNum}</span>` +
+      `<span class="pick-user">${displayName(pick.user)}</span>` +
+      `<span class="pick-pos ${player.pos}">${player.pos}</span>` +
+      `<span class="pick-player">${player.name}</span>` +
+      `<span class="pick-country">${player.country}</span>`;
     list.appendChild(row);
   });
 }
@@ -1617,40 +1539,31 @@ function renderDraftPlayerList() {
   const list = document.getElementById('draft-player-list');
   list.innerHTML = '';
 
-  const draftedIds = new Set(state.picks.map(p => p.playerId));
-  const myPicks = state.picks.filter(p => p.user === currentUser);
+  const draftedIds  = new Set(state.picks.map(p => p.playerId));
+  const myPicks     = state.picks.filter(p => p.user === currentUser);
   const myCountries = new Set(myPicks.map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId)?.country));
-  const searchTerm = (document.getElementById('search-input')?.value || '').toLowerCase();
-
-  const isMyTurn = state.currentTurn < state.draftOrder.length &&
-                   state.draftOrder[state.currentTurn] === currentUser;
+  const searchTerm  = (document.getElementById('search-input')?.value || '').toLowerCase();
+  const isMyTurn    = state.currentTurn < state.draftOrder.length &&
+                      state.draftOrder[state.currentTurn] === currentUser;
   const myPicksFull = myPicks.length >= MAX_PICKS;
 
-  // Group by country
   const byCountry = {};
   PLAYERS_RAW.forEach(p => {
     if (!byCountry[p.country]) byCountry[p.country] = [];
     byCountry[p.country].push(p);
   });
 
-  const posOrderArr = ['PO','DF','MC','DC'];
-  const countries = Object.keys(byCountry).sort();
-
-  countries.forEach(country => {
-    const players = byCountry[country].sort((a,b) => posOrderArr.indexOf(a.pos) - posOrderArr.indexOf(b.pos));
-
-    // Filter
+  const posOrderArr = ['PO', 'DF', 'MC', 'DC'];
+  Object.keys(byCountry).sort().forEach(country => {
+    const players  = byCountry[country].sort((a, b) => posOrderArr.indexOf(a.pos) - posOrderArr.indexOf(b.pos));
     const filtered = players.filter(p => {
       if (posFilter !== 'ALL' && p.pos !== posFilter) return false;
       if (searchTerm && !p.name.toLowerCase().includes(searchTerm) && !country.toLowerCase().includes(searchTerm)) return false;
       return true;
     });
-
     if (filtered.length === 0) return;
 
     const isCountryDrafted = myCountries.has(country);
-    const allDrafted = players.every(p => draftedIds.has(p.id));
-
     const section = document.createElement('div');
     section.className = 'country-section';
 
@@ -1658,53 +1571,35 @@ function renderDraftPlayerList() {
     header.className = 'country-header' + (isCountryDrafted ? ' has-drafted' : '');
     const availCount = players.filter(p => !draftedIds.has(p.id)).length;
     header.innerHTML = `<span>${country} <span style="color:var(--border)">(${availCount} disp.)</span></span><span class="chevron">▾</span>`;
-    header.onclick = () => {
+    header.addEventListener('click', () => {
       section.classList.toggle('collapsed');
       header.classList.toggle('collapsed');
-    };
+    });
     section.appendChild(header);
 
     const playersDiv = document.createElement('div');
     playersDiv.className = 'country-players';
-
     filtered.forEach(p => {
-      const isDrafted = draftedIds.has(p.id);
+      const isDrafted     = draftedIds.has(p.id);
       const isCountryBlock = !isDrafted && isCountryDrafted;
       const row = document.createElement('div');
       row.className = 'draft-player-row' + (isDrafted ? ' drafted' : '') + (isCountryBlock ? ' country-drafted' : '');
-      row.innerHTML = `
-        <span class="dpr-pos ${p.pos}">${p.pos}</span>
-        <span class="dpr-name">${p.name}</span>
-        ${isDrafted ? '<span class="dpr-badge">FICHADO</span>' : isCountryBlock ? '<span class="dpr-badge" style="color:#ff4444;border-color:#ff4444">PAÍS</span>' : ''}
-      `;
+      row.innerHTML =
+        `<span class="dpr-pos ${p.pos}">${p.pos}</span>` +
+        `<span class="dpr-name">${p.name}</span>` +
+        (isDrafted      ? '<span class="dpr-badge">FICHADO</span>' :
+         isCountryBlock ? '<span class="dpr-badge" style="color:#ff4444;border-color:#ff4444">PAÍS</span>' : '');
 
-      if (!isDrafted && !isCountryBlock && isMyTurn && !myPicksFull) {
-        row.onclick = () => openModal(p);
-      } else if (!isDrafted && !isCountryBlock && !isMyTurn) {
-        row.onclick = () => showToast('No es tu turno', 'error');
-      } else if (!isDrafted && isCountryBlock) {
-        row.onclick = () => showToast('Ya tienes un jugador de ' + country, 'error');
-      } else if (myPicksFull && !isDrafted) {
-        row.onclick = () => showToast('Ya tienes 17 jugadores', 'error');
-      }
+      if      (!isDrafted && !isCountryBlock && isMyTurn && !myPicksFull) row.addEventListener('click', () => openModal(p));
+      else if (!isDrafted && !isCountryBlock && !isMyTurn)                row.addEventListener('click', () => showToast('No es tu turno', 'error'));
+      else if (!isDrafted && isCountryBlock)                              row.addEventListener('click', () => showToast('Ya tienes un jugador de ' + country, 'error'));
+      else if (myPicksFull && !isDrafted)                                 row.addEventListener('click', () => showToast('Ya tienes 17 jugadores', 'error'));
 
       playersDiv.appendChild(row);
     });
-
     section.appendChild(playersDiv);
     list.appendChild(section);
   });
-}
-
-function togglePosFilter(btn, pos) {
-  document.querySelectorAll('.filter-pos-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  posFilter = pos;
-  renderDraftPlayerList();
-}
-
-function filterPlayers() {
-  renderDraftPlayerList();
 }
 
 // ── MODAL ──
@@ -1712,8 +1607,7 @@ function openModal(player) {
   pendingPlayer = player;
   const myPicks = state.picks.filter(p => p.user === currentUser).length;
   document.getElementById('modal-body').innerHTML =
-    `¿Fichas a <strong>${player.name}</strong> (${player.pos}) de <strong>${player.country}</strong>?<br><br>
-    Picks: ${myPicks + 1} / ${MAX_PICKS}`;
+    `¿Fichas a <strong>${player.name}</strong> (${player.pos}) de <strong>${player.country}</strong>?<br><br>Pick: ${myPicks + 1} / ${MAX_PICKS}`;
   document.getElementById('modal-overlay').classList.add('open');
 }
 
@@ -1722,58 +1616,47 @@ function closeModal() {
   pendingPlayer = null;
 }
 
-function confirmPick() {
+async function confirmPick() {
   if (!pendingPlayer) return;
-  const selectedPlayer = pendingPlayer;
+  const player = pendingPlayer;
   closeModal();
 
-  const turn = state.currentTurn;
-  if (turn >= state.draftOrder.length) return;
-  if (state.draftOrder[turn] !== currentUser) return;
+  const error = await submitPick(currentUser, player, PLAYERS_RAW);
+  if (error) { showToast(error, 'error'); return; }
 
-  const draftedIds = new Set(state.picks.map(p => p.playerId));
-  const myPicks = state.picks.filter(p => p.user === currentUser);
-  const myCountries = new Set(myPicks.map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId)?.country));
-
-  if (draftedIds.has(selectedPlayer.id)) { showToast('Jugador ya fichado', 'error'); return; }
-  if (myCountries.has(selectedPlayer.country)) { showToast('Ya tienes un jugador de ese país', 'error'); return; }
-  if (myPicks.length >= MAX_PICKS) { showToast('Ya tienes 17 jugadores', 'error'); return; }
-
-  state.picks.push({ pickNum: turn + 1, user: currentUser, playerId: selectedPlayer.id });
-  state.currentTurn = turn + 1;
-  saveState();
-
-  showToast(`✓ ${selectedPlayer.name} fichado`, 'success');
-  renderDraft();
-  // Also refresh plantilla if visible
-  if (document.getElementById('tab-plantilla').classList.contains('active')) {
-    renderPlantilla(plantillaViewUser || currentUser);
-  }
+  showToast(`✓ ${player.name} fichado`, 'success');
+  // La UI se actualiza sola via onStateChange cuando Firebase emite el cambio
 }
 
 // ── TOAST ──
-function showToast(msg, type = '') {
+function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'show ' + type;
+  t.className   = 'show ' + (type || '');
   clearTimeout(t._timer);
   t._timer = setTimeout(() => { t.className = ''; }, 3000);
 }
 
-// ────────────────────────────────────────────────────────
-// EXPOSE GLOBAL FUNCTIONS (required for type="module")
-// onclick handlers in HTML can't see module-scoped functions
-// ────────────────────────────────────────────────────────
-window.switchTab       = switchTab;
-window.togglePosFilter = togglePosFilter;
-window.filterPlayers   = filterPlayers;
-window.openModal       = openModal;
-window.closeModal      = closeModal;
-window.confirmPick     = confirmPick;
+// ─────────────────────────────────────────────────────────
+// WIRE EVENTS
+// ─────────────────────────────────────────────────────────
+document.getElementById('nav-plantilla').addEventListener('click', () => switchTab('plantilla'));
+document.getElementById('nav-draft').addEventListener('click',     () => switchTab('draft'));
+document.getElementById('search-input').addEventListener('input',  () => renderDraftPlayerList());
+document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+document.getElementById('btn-confirm-pick').addEventListener('click', confirmPick);
+document.querySelectorAll('.filter-pos-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pos-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    posFilter = btn.dataset.pos;
+    renderDraftPlayerList();
+  });
+});
 
-// ────────────────────────────────────────────────────────
-// INIT
-// ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────────────────
 initLogin();
 </script>
 </body>
