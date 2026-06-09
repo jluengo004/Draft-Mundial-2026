@@ -897,11 +897,30 @@
 
   /* ── RANKING TAB ── */
   #tab-ranking {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  }
+
+  #tab-ranking > div:first-child {
+    flex-shrink: 0;   /* ← esto evita que el header/subnav se comprima */
+  }
+
+  .ranking-content {
     flex: 1;
-    min-height: 0;
-    overflow: hidden;
+    min-height: 0;    /* ← esto es lo que faltaba */
+    overflow-y: auto;
+    padding: 0 28px 28px;
+  }
+
+  .ranking-empty {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 40px 0;
+    text-align: center;
   }
 
   .ranking-subnav {
@@ -924,20 +943,6 @@
   }
   .ranking-subnav-btn:hover { border-color: var(--accent2); color: var(--text); }
   .ranking-subnav-btn.active { border-color: var(--accent); color: var(--accent); background: #1e1a00; }
-
-  .ranking-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0 28px 28px;
-  }
-
-  .ranking-empty {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--muted);
-    padding: 40px 0;
-    text-align: center;
-  }
 
   /* Tabla general */
   .ranking-table { display: flex; flex-direction: column; gap: 0; }
