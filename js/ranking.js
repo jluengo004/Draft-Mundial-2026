@@ -10,7 +10,7 @@ let _unsubScores     = null;
 let _activeJornada   = null;
 let _activeSection   = 'general';
 
-const ADMIN_USER = 'Jon';
+const ADMIN_USER = 'Jon L';
 
 // ─────────────────────────────────────────────────────────
 // INIT
