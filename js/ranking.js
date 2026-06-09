@@ -188,23 +188,26 @@ function _renderJornada() {
 // ADMIN PANEL (solo Jon Luengo)
 // ─────────────────────────────────────────────────────────
 function _renderAdminPanel() {
-  let panel = document.getElementById('ranking-admin-panel');
-  if (panel) return; // ya renderizado, no duplicar
+  // Re-render cada vez para que el botón "cargar alineados" tenga datos frescos
+  const existing = document.getElementById('ranking-admin-panel');
+  if (existing) existing.remove();
 
-  panel = document.createElement('div');
+  const panel = document.createElement('div');
   panel.id = 'ranking-admin-panel';
   panel.className = 'admin-panel';
   document.getElementById('tab-ranking').appendChild(panel);
 
   panel.innerHTML = `
     <div class="admin-title">⚙ INTRODUCIR PUNTUACIONES</div>
-    <div class="admin-hint">Un jugador por línea: <code>Apellido Nombre = pts</code> (o parte del nombre)</div>
     <div class="admin-row">
       <label class="admin-label">JORNADA</label>
       <input type="number" id="admin-jornada" class="admin-input" min="1" max="64" placeholder="1">
+      <button id="admin-load-btn" class="btn-secondary" style="font-size:0.65rem;padding:6px 14px;letter-spacing:1px">
+        CARGAR ALINEADOS
+      </button>
     </div>
-    <textarea id="admin-scores-input" class="admin-textarea"
-      placeholder="Mbappe Kylian = 12&#10;Neuer Manuel = 8&#10;Pedri = 6&#10;Yamal Lamine = -2"></textarea>
+    <div class="admin-hint">Formato: <code>Nombre Apellido = pts</code> · Edita solo los puntos</div>
+    <textarea id="admin-scores-input" class="admin-textarea"></textarea>
     <div class="admin-actions">
       <button id="admin-preview-btn" class="btn-secondary">PREVISUALIZAR</button>
       <button id="admin-save-btn" class="btn-danger">GUARDAR EN DB</button>
@@ -212,8 +215,60 @@ function _renderAdminPanel() {
     <div id="admin-preview" class="admin-preview"></div>
   `;
 
+  document.getElementById('admin-load-btn').addEventListener('click', _loadAlineados);
   document.getElementById('admin-preview-btn').addEventListener('click', _previewScores);
   document.getElementById('admin-save-btn').addEventListener('click', _saveScores);
+}
+
+/** Rellena el textarea con todos los jugadores alineados (sin duplicados), con = 0 */
+function _loadAlineados() {
+  const { USERS, PLAYERS_RAW, state } = _ctx;
+
+  // Recoger todos los jugadores titulares de todos los usuarios, sin duplicados
+  const seen    = new Set();
+  const players = [];
+
+  USERS.forEach(user => {
+    const assignment  = _ctx.pitchAssignments?.[user] || {};
+    const assignedIds = new Set(Object.values(assignment));
+
+    const userPicks = state.picks
+      .filter(p => p.user === user)
+      .map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId))
+      .filter(Boolean);
+
+    // Titulares; si no tiene alineación, skip (no incluir suplentes)
+    const titulares = userPicks.filter(p => assignedIds.has(p.id));
+
+    titulares.forEach(p => {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        players.push(p);
+      }
+    });
+  });
+
+  if (players.length === 0) {
+    document.getElementById('admin-preview').innerHTML =
+      '<div class="admin-errors">⚠ Ningún usuario tiene jugadores alineados aún</div>';
+    return;
+  }
+
+  // Ordenar por posición
+  const posOrder = ['PO', 'DF', 'MC', 'DC'];
+  players.sort((a, b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos));
+
+  // Cargar puntuaciones existentes de la jornada seleccionada (si la hay)
+  const jornada = parseInt(document.getElementById('admin-jornada').value);
+  const existing = (jornada && _scores[jornada]) ? _scores[jornada] : {};
+
+  const lines = players.map(p => {
+    const pts = existing[p.id] !== undefined ? existing[p.id] : 0;
+    return `${p.name} = ${pts}`;
+  });
+
+  document.getElementById('admin-scores-input').value = lines.join('\n');
+  document.getElementById('admin-preview').innerHTML = '';
 }
 
 function _parseInput() {
