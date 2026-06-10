@@ -221,9 +221,11 @@
   /* ── PLANTILLA TAB ── */
   #tab-plantilla {
     padding: 28px;
-    overflow-y: auto;
+    overflow: hidden;
     flex: 1;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .plantilla-header {
@@ -738,8 +740,10 @@
   .plantilla-layout {
     display: flex;
     gap: 28px;
-    align-items: flex-start;
+    align-items: stretch;   /* bench-panel se estira hasta la altura del campo */
     flex-wrap: wrap;
+    flex: 1;
+    min-height: 0;
   }
 
   .pitch-wrapper {
@@ -805,7 +809,9 @@
     min-width: 220px;
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 220px);
+    /* 17 jugadores × ~33px + títulos + hint ≈ 720px máx */
+    height: 100%;
+    min-height: 0;
   }
 
   .bench-hint {
@@ -838,6 +844,7 @@
     gap: 4px;
     overflow-y: auto;
     flex: 1;
+    min-height: 0;
   }
 
   .bench-card {
