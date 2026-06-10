@@ -1,14 +1,16 @@
 // ─────────────────────────────────────────────────────────
 // plantilla.js — tab "Mi Plantilla"
 // ─────────────────────────────────────────────────────────
-import { savePitchAssignment, loadPitchAssignment, displayName, isAlineacionBloqueada, JORNADAS } from './state.js';
+import { savePitchAssignment, loadPitchAssignment, displayName, isAlineacionBloqueada, JORNADAS, dbListen } from './state.js';
 
 // ── Contexto inyectado desde app.js ──
 let _ctx = null;
 
 // ── Estado local del módulo ──
-let pitchAssignment      = {};  // { user: { slotId: playerId } }
+let pitchAssignment       = {};  // { user: { slotId: playerId } }
 let selectedSquadPlayerId = null;
+let _scores               = {};  // { jornadaId: { playerId: pts } }
+let _unsubScores          = null;
 
 // ── Definición de slots del campo (4-3-3) ──
 const PITCH_SLOTS = [
@@ -26,6 +28,16 @@ export function initPlantilla(ctx) {
   _ctx = ctx;
   pitchAssignment[ctx.currentUser] = ctx.pitchData || {};
   _buildUserSelector();
+
+  // Suscribir a puntuaciones en tiempo real
+  if (_unsubScores) _unsubScores();
+  _unsubScores = dbListen('scores', data => {
+    _scores = data || {};
+    if (document.getElementById('tab-plantilla')?.classList.contains('active')) {
+      renderPlantilla(_ctx.plantillaViewUser || _ctx.currentUser);
+    }
+  });
+
   renderPlantilla(ctx.currentUser);
 }
 
@@ -251,9 +263,22 @@ function _makeCard(player, isTitular, isMe, assignment, user, PLAYERS_RAW) {
   const isSelected = selectedSquadPlayerId === player.id;
   const card       = document.createElement('div');
   card.className   = 'bench-card' + (isSelected ? ' selected-card' : '');
-  card.innerHTML   =
+
+  // Score chips — solo jornadas con puntuación para este jugador
+  const scoreChips = Object.keys(_scores)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .filter(j => _scores[j][player.id] !== undefined)
+    .map(j => {
+      const pts = _scores[j][player.id];
+      const cls = pts > 0 ? 'score-chip pos' : pts < 0 ? 'score-chip neg' : 'score-chip zero';
+      return `<span class="${cls}" title="Jornada ${j}">J${j}: ${pts}</span>`;
+    }).join('');
+
+  card.innerHTML =
     `<span class="bench-card-pos ${player.pos}">${player.pos}</span>` +
     `<span class="bench-card-name">${player.name}</span>` +
+    (scoreChips ? `<span class="bench-card-scores">${scoreChips}</span>` : '') +
     `<span class="bench-card-country">${player.country}</span>`;
 
   if (!isMe) return card;
