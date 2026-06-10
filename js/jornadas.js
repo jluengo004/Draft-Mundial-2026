@@ -67,7 +67,7 @@ export const JORNADAS = [
     nombre: 'Final',
     // 19 jul 21:00 CEST
     bloqueo: '2026-07-19T20:45:00+02:00',
-  },
+  }
 ];
 
 /**
