@@ -24,13 +24,13 @@ export const JORNADAS = [
     id: 2,
     nombre: 'Fase de Grupos — Jornada 2',
     // Segunda vuelta de partidos de grupo empieza ~17 jun
-    bloqueo: '2026-06-17T14:45:00+02:00',
+    bloqueo: '2026-06-18T17:45:00+02:00',
   },
   {
     id: 3,
     nombre: 'Fase de Grupos — Jornada 3',
     // Tercera vuelta (decisiva) empieza ~23 jun
-    bloqueo: '2026-06-23T20:45:00+02:00',
+    bloqueo: '2026-06-24T20:45:00+02:00',
   },
   {
     id: 4,
@@ -42,13 +42,13 @@ export const JORNADAS = [
     id: 5,
     nombre: 'Octavos de Final (Round of 16)',
     // Empieza ~5 jul
-    bloqueo: '2026-07-05T20:45:00+02:00',
+    bloqueo: '2026-07-04T18:45:00+02:00',
   },
   {
     id: 6,
     nombre: 'Cuartos de Final',
     // Empieza ~10 jul
-    bloqueo: '2026-07-10T20:45:00+02:00',
+    bloqueo: '2026-07-09T21:45:00+02:00',
   },
   {
     id: 7,
@@ -58,6 +58,12 @@ export const JORNADAS = [
   },
   {
     id: 8,
+    nombre: 'Tercer y Cuarto Puesto',
+    // 19 jul 21:00 CEST
+    bloqueo: '2026-07-18T22:45:00+02:00',
+  },
+  {
+    id: 9,
     nombre: 'Final',
     // 19 jul 21:00 CEST
     bloqueo: '2026-07-19T20:45:00+02:00',

@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────
 // plantilla.js — tab "Mi Plantilla"
 // ─────────────────────────────────────────────────────────
-import { savePitchAssignment, loadPitchAssignment, displayName, isAlineacionBloqueada, JORNADAS, getJornadaBloqueadaActual } from './state.js';
+import { savePitchAssignment, loadPitchAssignment, displayName, isAlineacionBloqueada, JORNADAS } from './state.js';
 
 // ── Contexto inyectado desde app.js ──
 let _ctx = null;
@@ -68,33 +68,13 @@ export function renderPlantilla(user) {
   document.querySelector('.plantilla-title').textContent =
     user === currentUser ? 'Mi Plantilla' : `Plantilla de ${displayName(user)}`;
 
-  // ── Estado de bloqueo ──
-  const bloqueada    = isAlineacionBloqueada();
-  const jornadaActual = getJornadaBloqueadaActual();
+  // ── Banner de estado de bloqueo ──
+  _renderLockBanner();
 
-  // Banner de bloqueo
-  let banner = document.getElementById('plantilla-lock-banner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'plantilla-lock-banner';
-    const header = document.querySelector('#tab-plantilla .plantilla-header');
-    if (header) header.after(banner);
-  }
-  if (bloqueada && jornadaActual) {
-    const jornadaSig = JORNADAS.find(j => j.id === jornadaActual.id + 1);
-    banner.className = 'plantilla-lock-banner locked';
-    banner.innerHTML =
-      `🔒 Alineación bloqueada — <strong>${jornadaActual.nombre}</strong>` +
-      (jornadaSig
-        ? ` · Próximo desbloqueo: <strong>${new Date(jornadaSig.bloqueo).toLocaleDateString('es-ES', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</strong>`
-        : ' · Torneo finalizado');
-  } else {
-    const jornadaSig = JORNADAS.find(j => new Date(j.bloqueo) > new Date());
-    banner.className = 'plantilla-lock-banner unlocked';
-    banner.innerHTML = jornadaSig
-      ? `🟢 Alineación abierta · Se bloquea el <strong>${new Date(jornadaSig.bloqueo).toLocaleDateString('es-ES', {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</strong>`
-      : '🟢 Alineación abierta';
-  }
+  // ── La alineación está bloqueada solo si NO hay próxima jornada
+  // (fin de torneo). Entre jornadas siempre está abierta.
+  const proximaJornada = JORNADAS.find(j => new Date(j.bloqueo) > new Date());
+  const bloqueada      = !proximaJornada; // solo bloqueado si torneo terminado
 
   // Validar y limpiar asignaciones obsoletas
   const assignment = pitchAssignment[user] || {};
@@ -105,11 +85,41 @@ export function renderPlantilla(user) {
   pitchAssignment[user] = assignment;
 
   const assignedIds = new Set(Object.values(assignment));
-  // Bloqueado: nadie puede editar. Sin bloqueo: solo el propio usuario.
   const isMe        = !bloqueada && user === currentUser;
 
   _renderPitchSlots(user, userPicks, assignment, assignedIds, isMe, PLAYERS_RAW);
   _renderSquadPanel(user, userPicks, assignment, assignedIds, isMe, PLAYERS_RAW);
+}
+
+function _renderLockBanner() {
+  let banner = document.getElementById('plantilla-lock-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'plantilla-lock-banner';
+    // Insertar después del selector de usuario
+    const sel = document.getElementById('plantilla-user-selector');
+    if (sel) sel.after(banner);
+  }
+
+  const now            = new Date();
+  const proximaJornada = JORNADAS.find(j => new Date(j.bloqueo) > now);
+  const jornadaAnterior = [...JORNADAS].reverse().find(j => new Date(j.bloqueo) <= now);
+
+  if (proximaJornada) {
+    // Hay próxima jornada → alineación abierta
+    const fecha = new Date(proximaJornada.bloqueo).toLocaleDateString('es-ES', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit'
+    });
+    banner.className = 'plantilla-lock-banner unlocked';
+    banner.innerHTML =
+      `🟢 Alineación abierta para <strong>${proximaJornada.nombre}</strong>` +
+      ` · Se bloquea el <strong>${fecha}</strong>`;
+  } else {
+    // No hay más jornadas → torneo terminado
+    banner.className = 'plantilla-lock-banner locked';
+    banner.innerHTML = `🔒 Torneo finalizado — alineación bloqueada`;
+  }
 }
 
 // ─────────────────────────────────────────────────────────

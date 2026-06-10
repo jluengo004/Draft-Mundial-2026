@@ -87,10 +87,9 @@ export async function initState(onStateChange) {
 }
 
 function _generateDraftOrder() {
-  const shuffled = [...USERS].sort(() => Math.random() - 0.5);
   const order = [];
   for (let round = 0; round < MAX_PICKS; round++) {
-    order.push(...(round % 2 === 0 ? [...shuffled] : [...shuffled].reverse()));
+    order.push(...(round % 2 === 0 ? [...DRAFT_ORDER] : [...DRAFT_ORDER].reverse()));
   }
   return order;
 }
