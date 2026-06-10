@@ -897,24 +897,22 @@
 
   /* ── RANKING TAB ── */
   #tab-ranking {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    justify-content: flex-start;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   }
 
-  .ranking-header {
-    flex-shrink: 0;
-    padding: 28px 28px 0;
+  #tab-ranking > div:first-child {
+    flex-shrink: 0;   /* ← esto evita que el header/subnav se comprima */
   }
 
   .ranking-content {
     flex: 1;
-    min-height: 0;
+    min-height: 0;    /* ← esto es lo que faltaba */
     overflow-y: auto;
-    padding: 12px 28px 28px;
+    padding: 0 28px 28px;
   }
 
   .ranking-empty {
@@ -1096,6 +1094,29 @@
   .admin-errors  { color: var(--red); font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; margin-bottom: 10px; }
   .admin-preview-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; margin-bottom: 8px; }
   .admin-preview-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.82rem; }
+
+  /* ── BANNER BLOQUEO ALINEACIÓN ── */
+  .plantilla-lock-banner {
+    margin: 0 0 16px 0;
+    padding: 10px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.5px;
+    border-left: 3px solid;
+    line-height: 1.5;
+  }
+  .plantilla-lock-banner.locked {
+    background: rgba(255, 68, 68, 0.08);
+    border-color: var(--red);
+    color: #ff8888;
+  }
+  .plantilla-lock-banner.locked strong { color: #ffbbbb; }
+  .plantilla-lock-banner.unlocked {
+    background: rgba(68, 204, 136, 0.08);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .plantilla-lock-banner.unlocked strong { color: #88ffcc; }
 </style>
 </head>
 <body>
@@ -1339,7 +1360,7 @@
 
   <!-- RANKING TAB -->
   <div id="tab-ranking" class="tab-content">
-    <div class="ranking-header">
+    <div style="padding:28px 28px 0">
       <div class="plantilla-header">
         <div class="plantilla-title">Ranking</div>
       </div>

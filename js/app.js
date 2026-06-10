@@ -6,7 +6,8 @@ import { USERS }       from '../data/users.js';
 import {
   MAX_PICKS, state,
   initState, saveNickname, loadNicknames, displayName,
-  loadPitchAssignment
+  loadPitchAssignment, snapshotJornadaSiToca,
+  isAlineacionBloqueada, JORNADAS, getJornadaBloqueadaActual
 } from './state.js';
 import { initPlantilla, renderPlantilla } from './plantilla.js';
 import { initDraft, renderDraft }         from './draft.js';
@@ -104,6 +105,14 @@ async function bootApp() {
 
   // Cuando el ranking necesita ver alineaciones de otros usuarios, las carga lazy
   _preloadAllPitchAssignments();
+
+  // Snapshot de alineaciones si hay jornada bloqueada
+  snapshotJornadaSiToca(USERS, () => pitchAssignments).then(() => {
+    // Re-render plantilla por si el estado de bloqueo cambió
+    if (document.getElementById('tab-plantilla')?.classList.contains('active')) {
+      renderPlantilla(plantillaViewUser || currentUser);
+    }
+  });
 
   switchTab('plantilla');
 }

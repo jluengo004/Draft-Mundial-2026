@@ -1,8 +1,9 @@
 // ─────────────────────────────────────────────────────────
 // ranking.js — tab "Ranking"
 // ─────────────────────────────────────────────────────────
-import { dbListen, dbSet } from './state.js';
-import { displayName }     from './state.js';
+import { dbListen, dbSet, loadSnapshot, dbGet } from './state.js';
+import { displayName } from './state.js';
+import { JORNADAS }    from '../data/jornadas.js';
 
 let _ctx             = null;
 let _scores          = {};   // { jornada: { playerId: pts } }
@@ -60,6 +61,19 @@ function _renderGeneral() {
   const { USERS, PLAYERS_RAW, state } = _ctx;
   const container = document.getElementById('ranking-content');
   container.innerHTML = '';
+
+  // Precargar snapshots para todas las jornadas con scores
+  const jornadasConScores = Object.keys(_scores).map(Number);
+  const allCached = jornadasConScores.every(j =>
+    USERS.every(u => _snapshotCache[`${j}:${u}`] !== undefined)
+  );
+  if (!allCached && jornadasConScores.length > 0) {
+    Promise.all(
+      jornadasConScores.flatMap(j => USERS.map(u => _getSnapshot(j, u)))
+    ).then(() => {
+      if (document.getElementById('tab-ranking')?.classList.contains('active')) renderRanking();
+    });
+  }
 
   const totals = USERS.map(user => ({
     user, pts: _calcUserTotal(user, PLAYERS_RAW, state)
@@ -132,6 +146,14 @@ function _renderJornada() {
   const jornadaScores = _scores[_activeJornada] || {};
   const { USERS, PLAYERS_RAW, state } = _ctx;
 
+  // Precargar snapshots async y re-render cuando estén listos
+  const needsLoad = USERS.some(u => _snapshotCache[`${_activeJornada}:${u}`] === undefined);
+  if (needsLoad) {
+    Promise.all(USERS.map(u => _getSnapshot(_activeJornada, u))).then(() => {
+      if (document.getElementById('tab-ranking')?.classList.contains('active')) renderRanking();
+    });
+  }
+
   const userResults = USERS.map(user => {
     const { pts, players } = _calcUserJornada(user, _activeJornada, PLAYERS_RAW, state);
     return { user, pts, players };
@@ -188,11 +210,10 @@ function _renderJornada() {
 // ADMIN PANEL (solo Jon Luengo)
 // ─────────────────────────────────────────────────────────
 function _renderAdminPanel() {
-  // Re-render cada vez para que el botón "cargar alineados" tenga datos frescos
-  const existing = document.getElementById('ranking-admin-panel');
-  if (existing) existing.remove();
+  let panel = document.getElementById('ranking-admin-panel');
+  if (panel) return; // ya renderizado, no duplicar
 
-  const panel = document.createElement('div');
+  panel = document.createElement('div');
   panel.id = 'ranking-admin-panel';
   panel.className = 'admin-panel';
   document.getElementById('tab-ranking').appendChild(panel);
@@ -201,10 +222,11 @@ function _renderAdminPanel() {
     <div class="admin-title">⚙ INTRODUCIR PUNTUACIONES</div>
     <div class="admin-row">
       <label class="admin-label">JORNADA</label>
-      <input type="number" id="admin-jornada" class="admin-input" min="1" max="64" placeholder="1">
-      <button id="admin-load-btn" class="btn-secondary" style="font-size:0.65rem;padding:6px 14px;letter-spacing:1px">
-        CARGAR ALINEADOS
-      </button>
+      <select id="admin-jornada" class="admin-input" style="min-width:240px">
+        <option value="">— Selecciona jornada —</option>
+        ${_jornadaOptions()}
+      </select>
+      <button id="admin-load-btn" class="btn-secondary" style="font-size:0.65rem;padding:6px 14px;letter-spacing:1px">CARGAR ALINEADOS</button>
     </div>
     <div class="admin-hint">Formato: <code>Nombre Apellido = pts</code> · Edita solo los puntos</div>
     <textarea id="admin-scores-input" class="admin-textarea"></textarea>
@@ -220,61 +242,17 @@ function _renderAdminPanel() {
   document.getElementById('admin-save-btn').addEventListener('click', _saveScores);
 }
 
-/** Rellena el textarea con todos los jugadores alineados (sin duplicados), con = 0 */
-function _loadAlineados() {
-  const { USERS, PLAYERS_RAW, state } = _ctx;
-
-  // Recoger todos los jugadores titulares de todos los usuarios, sin duplicados
-  const seen    = new Set();
-  const players = [];
-
-  USERS.forEach(user => {
-    const assignment  = _ctx.pitchAssignments?.[user] || {};
-    const assignedIds = new Set(Object.values(assignment));
-
-    const userPicks = state.picks
-      .filter(p => p.user === user)
-      .map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId))
-      .filter(Boolean);
-
-    // Titulares; si no tiene alineación, skip (no incluir suplentes)
-    const titulares = userPicks.filter(p => assignedIds.has(p.id));
-
-    titulares.forEach(p => {
-      if (!seen.has(p.id)) {
-        seen.add(p.id);
-        players.push(p);
-      }
-    });
-  });
-
-  if (players.length === 0) {
-    document.getElementById('admin-preview').innerHTML =
-      '<div class="admin-errors">⚠ Ningún usuario tiene jugadores alineados aún</div>';
-    return;
-  }
-
-  // Ordenar por posición
-  const posOrder = ['PO', 'DF', 'MC', 'DC'];
-  players.sort((a, b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos));
-
-  // Cargar puntuaciones existentes de la jornada seleccionada (si la hay)
-  const jornada = parseInt(document.getElementById('admin-jornada').value);
-  const existing = (jornada && _scores[jornada]) ? _scores[jornada] : {};
-
-  const lines = players.map(p => {
-    const pts = existing[p.id] !== undefined ? existing[p.id] : 0;
-    return `${p.name} = ${pts}`;
-  });
-
-  document.getElementById('admin-scores-input').value = lines.join('\n');
-  document.getElementById('admin-preview').innerHTML = '';
+function _jornadaOptions() {
+  return JORNADAS.map(j => {
+    const bloqueada = new Date(j.bloqueo) <= new Date();
+    return `<option value="${j.id}">${j.id}. ${j.nombre}${bloqueada ? ' 🔒' : ''}</option>`;
+  }).join('');
 }
 
 function _parseInput() {
   const { PLAYERS_RAW } = _ctx;
   const jornada = parseInt(document.getElementById('admin-jornada').value);
-  if (!jornada || jornada < 1) return { error: 'Introduce un número de jornada válido' };
+  if (!jornada || jornada < 1) return { error: 'Selecciona una jornada' };
 
   const lines   = document.getElementById('admin-scores-input').value
     .split('\n').map(l => l.trim()).filter(Boolean);
@@ -296,6 +274,62 @@ function _parseInput() {
   });
 
   return { jornada, results, errors };
+}
+
+
+/** Rellena el textarea con todos los jugadores alineados (sin duplicados).
+ *  Si la jornada está bloqueada usa el snapshot; si no, usa la alineación actual. */
+async function _loadAlineados() {
+  const { USERS, PLAYERS_RAW, state } = _ctx;
+  const jornadaId = parseInt(document.getElementById('admin-jornada').value);
+  if (!jornadaId) {
+    document.getElementById('admin-preview').innerHTML =
+      '<div class="admin-errors">⚠ Selecciona primero una jornada</div>';
+    return;
+  }
+
+  const jornadaDef  = JORNADAS.find(j => j.id === jornadaId);
+  const esBloqueada = jornadaDef && new Date(jornadaDef.bloqueo) <= new Date();
+
+  const seen    = new Set();
+  const players = [];
+
+  for (const user of USERS) {
+    let assignment = {};
+    if (esBloqueada) {
+      assignment = await _getSnapshot(jornadaId, user);
+    } else {
+      assignment = _ctx.pitchAssignments?.[user] || {};
+    }
+    const assignedIds = new Set(Object.values(assignment));
+    const userPicks   = state.picks
+      .filter(p => p.user === user)
+      .map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId))
+      .filter(Boolean);
+    userPicks.filter(p => assignedIds.has(p.id)).forEach(p => {
+      if (!seen.has(p.id)) { seen.add(p.id); players.push(p); }
+    });
+  }
+
+  if (players.length === 0) {
+    document.getElementById('admin-preview').innerHTML =
+      '<div class="admin-errors">⚠ Ningún usuario tiene jugadores alineados' +
+      (esBloqueada ? ' (snapshot vacío para esta jornada)' : ' aún') + '</div>';
+    return;
+  }
+
+  const posOrder = ['PO', 'DF', 'MC', 'DC'];
+  players.sort((a, b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos));
+
+  const existing = _scores[jornadaId] || {};
+  const lines = players.map(p =>
+    `${p.name} = ${existing[p.id] !== undefined ? existing[p.id] : 0}`
+  );
+
+  document.getElementById('admin-scores-input').value = lines.join('\n');
+  document.getElementById('admin-preview').innerHTML =
+    `<div style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.65rem">` +
+    `${players.length} jugadores cargados${esBloqueada ? ' desde snapshot 🔒' : ' (alineación actual)'}</div>`;
 }
 
 function _previewScores() {
@@ -345,7 +379,18 @@ function _calcUserTotal(user, PLAYERS_RAW, state) {
   }, 0);
 }
 
-function _calcUserJornada(user, jornada, PLAYERS_RAW, state) {
+// Cache de snapshots cargados para no hacer múltiples peticiones DB
+const _snapshotCache = {};
+
+async function _getSnapshot(jornadaId, user) {
+  const key = `${jornadaId}:${user}`;
+  if (_snapshotCache[key] !== undefined) return _snapshotCache[key];
+  const snap = await loadSnapshot(jornadaId, user);
+  _snapshotCache[key] = snap || {};
+  return _snapshotCache[key];
+}
+
+function _calcUserJornadaSync(user, jornada, PLAYERS_RAW, state, snapshotAssignment) {
   const jornadaScores = _scores[jornada] || {};
   const userPicks = state.picks
     .filter(p => p.user === user)
@@ -354,12 +399,10 @@ function _calcUserJornada(user, jornada, PLAYERS_RAW, state) {
 
   if (!userPicks.length) return { pts: 0, players: [] };
 
-  // Titulares de ese usuario desde pitchAssignments
-  const assignment  = _ctx.pitchAssignments?.[user] || {};
+  // Usar snapshot si existe, si no usar alineación actual como fallback
+  const assignment  = snapshotAssignment || _ctx.pitchAssignments?.[user] || {};
   const assignedIds = new Set(Object.values(assignment));
   const titulares   = userPicks.filter(p => assignedIds.has(p.id));
-
-  // Fallback: si no tiene alineación guardada, usar todos sus picks
   const activePlayers = titulares.length > 0 ? titulares : userPicks;
 
   const pts = activePlayers.reduce((sum, p) => {
@@ -368,4 +411,17 @@ function _calcUserJornada(user, jornada, PLAYERS_RAW, state) {
   }, 0);
 
   return { pts, players: activePlayers };
+}
+
+// Versión async que carga el snapshot de DB
+async function _calcUserJornadaAsync(user, jornada, PLAYERS_RAW, state) {
+  const snap = await _getSnapshot(jornada, user);
+  return _calcUserJornadaSync(user, jornada, PLAYERS_RAW, state, snap);
+}
+
+// Versión sync (usa cache si ya está cargado, si no usa alineación actual)
+function _calcUserJornada(user, jornada, PLAYERS_RAW, state) {
+  const key  = `${jornada}:${user}`;
+  const snap = _snapshotCache[key]; // puede ser undefined si no se ha cargado aún
+  return _calcUserJornadaSync(user, jornada, PLAYERS_RAW, state, snap);
 }

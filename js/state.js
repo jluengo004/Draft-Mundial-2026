@@ -6,8 +6,8 @@ import { initializeApp }
 import { getDatabase, ref, set, get, onValue, runTransaction }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-import { USERS }       from '../data/users.js';
-import { DRAFT_ORDER } from '../data/draft-orden.js';
+import { USERS }    from '../data/users.js';
+import { JORNADAS, isJornadaBloqueada, getUltimaJornadaBloqueada } from '../data/jornadas.js';
 
 // ─────────────────────────────────────────────────────────
 // FIREBASE INIT
@@ -87,10 +87,10 @@ export async function initState(onStateChange) {
 }
 
 function _generateDraftOrder() {
-  // Snake draft: ronda par = orden normal, impar = inverso
+  const shuffled = [...USERS].sort(() => Math.random() - 0.5);
   const order = [];
   for (let round = 0; round < MAX_PICKS; round++) {
-    order.push(...(round % 2 === 0 ? [...DRAFT_ORDER] : [...DRAFT_ORDER].reverse()));
+    order.push(...(round % 2 === 0 ? [...shuffled] : [...shuffled].reverse()));
   }
   return order;
 }
@@ -148,3 +148,78 @@ export async function savePitchAssignment(user, assignment) {
 export async function loadPitchAssignment(user) {
   return (await dbGet('pitch/' + user)) || {};
 }
+
+// ─────────────────────────────────────────────────────────
+// SNAPSHOTS DE ALINEACIÓN POR JORNADA
+//
+// Cuando se bloquea una jornada, guardamos en DB:
+//   /snapshots/{jornadaId}/{user} → { slotId: playerId }
+//
+// Si el usuario no tiene alineación, se usa la última que tuviera.
+// ─────────────────────────────────────────────────────────
+
+/**
+ * Guarda el snapshot de alineación de un usuario para una jornada.
+ * Solo escribe si aún no existe snapshot para esa jornada+usuario.
+ */
+export async function saveSnapshot(jornadaId, user, assignment) {
+  const existing = await dbGet(`snapshots/${jornadaId}/${user}`);
+  if (existing !== null) return; // ya existe, no sobreescribir
+  await dbSet(`snapshots/${jornadaId}/${user}`, assignment);
+}
+
+/**
+ * Carga el snapshot de alineación de un usuario para una jornada.
+ */
+export async function loadSnapshot(jornadaId, user) {
+  return (await dbGet(`snapshots/${jornadaId}/${user}`)) || null;
+}
+
+/**
+ * Comprueba si la alineación del usuario está bloqueada ahora mismo
+ * (hay alguna jornada activa bloqueada sin snapshot guardado aún → hay que snapshottear).
+ * Devuelve la jornada bloqueada más reciente o null.
+ */
+export function getJornadaBloqueadaActual() {
+  return getUltimaJornadaBloqueada();
+}
+
+/**
+ * Para todos los usuarios, guarda el snapshot de la jornada bloqueada
+ * si aún no existe. Llámalo al arrancar la app.
+ * Si el usuario no tiene alineación, busca la última jornada anterior.
+ */
+export async function snapshotJornadaSiToca(users, getAllPitchAssignments) {
+  const jornadaBloqueada = getUltimaJornadaBloqueada();
+  if (!jornadaBloqueada) return;
+
+  for (const user of users) {
+    const existing = await dbGet(`snapshots/${jornadaBloqueada.id}/${user}`);
+    if (existing !== null) continue; // ya snapshotteado
+
+    let assignment = (await dbGet('pitch/' + user)) || {};
+
+    // Si está vacío, buscar snapshot de jornada anterior
+    if (Object.keys(assignment).length === 0) {
+      for (let i = jornadaBloqueada.id - 1; i >= 1; i--) {
+        const prev = await dbGet(`snapshots/${i}/${user}`);
+        if (prev && Object.keys(prev).length > 0) {
+          assignment = prev;
+          break;
+        }
+      }
+    }
+
+    await dbSet(`snapshots/${jornadaBloqueada.id}/${user}`, assignment);
+  }
+}
+
+/**
+ * Devuelve true si la alineación actual del usuario está bloqueada
+ * (la jornada más reciente ya pasó su fecha de bloqueo).
+ */
+export function isAlineacionBloqueada() {
+  return getUltimaJornadaBloqueada() !== null;
+}
+
+export { isJornadaBloqueada, JORNADAS };
