@@ -90,23 +90,27 @@
 
   .user-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
     margin-bottom: 28px;
   }
 
   .user-btn {
-    padding: 12px 10px;
+    padding: 14px 10px 12px;
     background: var(--surface2);
     border: 1px solid var(--border);
     color: var(--text);
     font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     cursor: pointer;
     transition: all 0.15s;
-    text-align:left;
-    position:relative;
-    overflow:hidden;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
   }
 
   .user-btn:hover {
@@ -118,16 +122,57 @@
     border-color: var(--accent);
     background: #1e1a00;
     color: var(--accent);
-    font-weight:600;
+    font-weight: 600;
+  }
+
+  .user-btn.selected .user-avatar {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
   }
 
   .user-btn.selected::after {
-    content:'✓';
-    position:absolute;
-    right:10px;
-    top:50%;
-    transform:translateY(-50%);
-    color:var(--accent);
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.7rem;
+    color: var(--accent);
+  }
+
+  .user-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    object-fit: cover;
+    background: var(--surface);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    display: block;
+  }
+
+  .user-avatar-fallback {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    color: var(--muted);
+    transition: border-color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .user-btn:hover .user-avatar-fallback { border-color: var(--accent2); }
+  .user-btn.selected .user-avatar-fallback { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+
+  .user-btn-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
   .btn-primary {
@@ -805,6 +850,7 @@
     min-width: 220px;
     display: flex;
     flex-direction: column;
+    max-height: calc(100vh - 220px);
   }
 
   .bench-hint {

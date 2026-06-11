@@ -28,11 +28,39 @@ export let pitchAssignments   = {};
 async function initLogin() {
   await loadNicknames();
 
+  // Mapa usuario → nombre de archivo de avatar en assets/avatars/
+  const AVATAR_FILES = {
+    'Jon Luengo':               'jon.jpg',
+    'Oier Ezkerro':             'oier.jpg',
+    'Urko Fernandez':           'urko.jpg',
+    'Ortiz Mardones':           'ortiz.jpg',
+    'Urtzi Suaga':              'urtzi.jpg',
+    'Markel Rodeño':            'markel.jpg',
+    'Jokin Garcia de Cortazar': 'jokin.jpg',
+    'Mikel Palomero':           'mikel.jpg',
+    'Aritz Gutierrez':          'aritz.jpg',
+  };
+
   const grid = document.getElementById('user-grid');
   USERS.forEach(u => {
-    const btn = document.createElement('button');
-    btn.className   = 'user-btn';
-    btn.textContent = displayName(u);
+    const btn      = document.createElement('button');
+    btn.className  = 'user-btn';
+
+    const avatarFile = AVATAR_FILES[u];
+    const avatarPath = avatarFile ? `./assets/avatars/${avatarFile}` : null;
+    const initial    = displayName(u).charAt(0).toUpperCase();
+
+    // Avatar: imagen si existe, sino inicial como fallback
+    const avatarHTML = avatarPath
+      ? `<img class="user-avatar" src="${avatarPath}" alt="${displayName(u)}"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`+
+        `<div class="user-avatar-fallback" style="display:none">${initial}</div>`
+      : `<div class="user-avatar-fallback">${initial}</div>`;
+
+    btn.innerHTML =
+      avatarHTML +
+      `<span class="user-btn-name">${displayName(u)}</span>`;
+
     btn.addEventListener('click', () => {
       document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
