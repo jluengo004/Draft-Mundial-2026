@@ -47,8 +47,9 @@ async function initLogin() {
     btn.className  = 'user-btn';
 
     const avatarFile = AVATAR_FILES[u];
-    const avatarPath = avatarFile ? `./assets/avatars/${avatarFile}` : null;
-    const initial    = displayName(u).charAt(0).toUpperCase();
+    // const avatarPath = avatarFile ? `./assets/avatars/${avatarFile}` : null;
+    const avatarPath = `./assets/avatars/jon.jpg`
+    const initial    = displayName(u);
 
     // Avatar: imagen si existe, sino inicial como fallback
     const avatarHTML = avatarPath
