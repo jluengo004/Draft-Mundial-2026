@@ -35,7 +35,7 @@ async function initLogin() {
     'Urko F':               'urko.jpg',
     'Ortzi M':              'ortzi.png',
     'Urtzi S':              'urtzi.jpg',
-    'Markel Ro':            'markel.png',
+    'Markel R':            'markel.png',
     'Alberto GdC':          'alberto.png',
     'Aritz G':              'aritz.png',
   };
