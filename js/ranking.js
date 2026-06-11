@@ -318,8 +318,13 @@ async function _loadAlineados() {
     return;
   }
 
-  const posOrder = ['PO', 'DF', 'MC', 'DC'];
-  players.sort((a, b) => posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos));
+  players.sort((a, b) => {
+    if (a.country < b.country) return -1;
+    if (a.country > b.country) return  1;
+    // Dentro del mismo país, orden por posición
+    const posOrder = ['PO', 'DF', 'MC', 'DC'];
+    return posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos);
+  });
 
   const existing = _scores[jornadaId] || {};
   const lines = players.map(p =>
