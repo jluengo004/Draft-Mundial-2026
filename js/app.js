@@ -30,15 +30,14 @@ async function initLogin() {
 
   // Mapa usuario → nombre de archivo de avatar en assets/avatars/
   const AVATAR_FILES = {
-    'Jon Luengo':               'jon.jpg',
-    'Oier Ezkerro':             'oier.jpg',
-    'Urko Fernandez':           'urko.jpg',
-    'Ortiz Mardones':           'ortzi.jpg',
-    'Urtzi Suaga':              'urtzi.jpg',
-    'Markel Rodeño':            'markel.jpg',
-    'Jokin Garcia de Cortazar': 'jokin.jpg',
-    'Mikel Palomero':           'mikel.jpg',
-    'Aritz Gutierrez':          'aritz.jpg',
+    'Jon L':                'jon.png',
+    'Oier E':               'oier.png',
+    'Urko F':               'urko.jpg',
+    'Ortiz M':              'ortzi.png',
+    'Urtzi S':              'urtzi.jpg',
+    'Markel Ro':            'markel.jpg',
+    'Alberto GdC':          'alberto.png',
+    'Aritz G':              'aritz.png',
   };
 
   const grid = document.getElementById('user-grid');
@@ -48,7 +47,7 @@ async function initLogin() {
 
     const avatarFile = AVATAR_FILES[u];
     // const avatarPath = avatarFile ? `./assets/avatars/${avatarFile}` : null;
-    const avatarPath = `./assets/avatars/jon.jpg`
+    const avatarPath = `./assets/avatars/jon.png`
     const initial    = displayName(u);
 
     // Avatar: imagen si existe, sino inicial como fallback
