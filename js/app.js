@@ -33,7 +33,7 @@ async function initLogin() {
     'Jon Luengo':               'jon.jpg',
     'Oier Ezkerro':             'oier.jpg',
     'Urko Fernandez':           'urko.jpg',
-    'Ortiz Mardones':           'ortiz.jpg',
+    'Ortiz Mardones':           'ortzi.jpg',
     'Urtzi Suaga':              'urtzi.jpg',
     'Markel Rodeño':            'markel.jpg',
     'Jokin Garcia de Cortazar': 'jokin.jpg',
