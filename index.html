@@ -210,8 +210,7 @@
   /* ── MAIN SCREEN ── */
   #screen-main {
     background: var(--bg);
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
   }
 
   .topbar {
@@ -979,11 +978,11 @@
 
   /* ── RANKING TAB ── */
   #tab-ranking {
-    display: flex;
+    display: block;
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    padding: 28px;
   }
 
   .ranking-top {
@@ -996,9 +995,7 @@
   }
 
   .ranking-content {
-    flex: 1;
     min-height: 0;
-    overflow-y: auto;
     padding: 12px 28px 28px;
   }
 
