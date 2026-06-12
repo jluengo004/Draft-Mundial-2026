@@ -95,18 +95,75 @@ function _renderGeneral() {
       <span class="rk-pos">POS</span>
       <span class="rk-user">PARTICIPANTE</span>
       <span class="rk-pts">PTS TOTAL</span>
+      <span></span>
     </div>`;
 
+  const jornadasOrdenadas = Object.keys(_scores).map(Number).sort((a, b) => a - b);
+
   totals.forEach((entry, idx) => {
-    const row  = document.createElement('div');
-    const isMe = entry.user === _ctx.currentUser;
-    row.className = 'ranking-row' + (isMe ? ' ranking-row-me' : '');
+    const isMe  = entry.user === _ctx.currentUser;
     const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
-    row.innerHTML =
-      `<span class="rk-pos">${medal}</span>` +
-      `<span class="rk-user">${displayName(entry.user)}</span>` +
-      `<span class="rk-pts">${entry.pts}</span>`;
-    table.appendChild(row);
+
+    // ── Bloque expandible ──
+    const block = document.createElement('div');
+    block.className = 'jornada-user-block' + (isMe ? ' jornada-block-me' : '');
+
+    // Header clickable (mismo estilo que _renderJornada)
+    const header = document.createElement('div');
+    header.className = 'jornada-user-header';
+    header.style.cursor = 'pointer';
+    header.innerHTML =
+      `<span class="jornada-pos">${medal}</span>` +
+      `<span class="jornada-username">${displayName(entry.user)}</span>` +
+      `<span class="jornada-total-pts">${entry.pts} pts</span>` +
+      `<span class="jornada-chevron">▾</span>`;
+
+    // ── Panel de detalle: todos los jugadores con puntos totales ──
+    const detail = document.createElement('div');
+    detail.className = 'jornada-detail';
+    let open = isMe;
+    detail.style.display = open ? 'block' : 'none';
+
+    // Picks del usuario
+    const userPicks = state.picks
+      .filter(p => p.user === entry.user)
+      .map(p => PLAYERS_RAW.find(pl => pl.id === p.playerId))
+      .filter(Boolean);
+
+    if (userPicks.length === 0) {
+      detail.innerHTML = '<div class="jornada-no-alineacion">Sin jugadores fichados</div>';
+    } else {
+      // Calcular puntos totales por jugador sumando todas las jornadas
+      const posOrder = ['PO', 'DF', 'MC', 'DC'];
+      const playersWithTotals = userPicks.map(p => {
+        const total = jornadasOrdenadas.reduce((sum, j) => {
+          const s = (_scores[j] || {})[p.id];
+          return sum + (typeof s === 'number' ? s : 0);
+        }, 0);
+        return { ...p, total };
+      }).sort((a, b) => b.total - a.total || posOrder.indexOf(a.pos) - posOrder.indexOf(b.pos));
+
+      playersWithTotals.forEach(p => {
+        const prow = document.createElement('div');
+        prow.className = 'jornada-player-row';
+        prow.innerHTML =
+          `<span class="jornada-player-pos ${p.pos}">${p.pos}</span>` +
+          `<span class="jornada-player-name">${p.name}</span>` +
+          `<span class="jornada-player-country">${p.country}</span>` +
+          `<span class="jornada-player-pts ${p.total > 0 ? 'pts-pos' : p.total < 0 ? 'pts-neg' : ''}">${p.total}</span>`;
+        detail.appendChild(prow);
+      });
+    }
+
+    header.addEventListener('click', () => {
+      open = !open;
+      detail.style.display = open ? 'block' : 'none';
+      header.querySelector('.jornada-chevron').style.transform = open ? 'rotate(180deg)' : '';
+    });
+
+    block.appendChild(header);
+    block.appendChild(detail);
+    table.appendChild(block);
   });
   container.appendChild(table);
 }
