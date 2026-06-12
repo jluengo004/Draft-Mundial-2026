@@ -229,6 +229,13 @@ function _renderAdminPanel() {
       <button id="admin-load-btn" class="btn-secondary" style="font-size:0.65rem;padding:6px 14px;letter-spacing:1px">CARGAR ALINEADOS</button>
     </div>
     <div class="admin-hint">Formato: <code>Nombre Apellido = pts</code> · Edita solo los puntos</div>
+    <div class="admin-row" id="admin-filter-row" style="display:none">
+      <label class="admin-label">FILTRAR PAÍS</label>
+      <input type="text" id="admin-country-filter" class="admin-input"
+        placeholder="Ej: España, Francia..." style="flex:1" autocomplete="off">
+      <button id="admin-filter-clear" class="btn-secondary"
+        style="font-size:0.65rem;padding:6px 10px;letter-spacing:0">✕ Limpiar</button>
+    </div>
     <textarea id="admin-scores-input" class="admin-textarea"></textarea>
     <div class="admin-actions">
       <button id="admin-preview-btn" class="btn-secondary">PREVISUALIZAR</button>
@@ -240,6 +247,11 @@ function _renderAdminPanel() {
   document.getElementById('admin-load-btn').addEventListener('click', _loadAlineados);
   document.getElementById('admin-preview-btn').addEventListener('click', _previewScores);
   document.getElementById('admin-save-btn').addEventListener('click', _saveScores);
+  document.getElementById('admin-country-filter').addEventListener('input', _applyCountryFilter);
+  document.getElementById('admin-filter-clear').addEventListener('click', () => {
+    document.getElementById('admin-country-filter').value = '';
+    _applyCountryFilter();
+  });
 }
 
 function _jornadaOptions() {
@@ -331,10 +343,49 @@ async function _loadAlineados() {
     `${p.name} = ${existing[p.id] !== undefined ? existing[p.id] : 0}`
   );
 
+  // Guardar cache para filtrado
+  _allLoadedLines = players.map((p, i) => ({ name: p.name, country: p.country, line: lines[i] }));
+
   document.getElementById('admin-scores-input').value = lines.join('\n');
   document.getElementById('admin-preview').innerHTML =
     `<div style="color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.65rem">` +
     `${players.length} jugadores cargados${esBloqueada ? ' desde snapshot 🔒' : ' (alineación actual)'}</div>`;
+
+  // Mostrar filtro
+  const filterRow = document.getElementById('admin-filter-row');
+  if (filterRow) {
+    filterRow.style.display = 'flex';
+    document.getElementById('admin-country-filter').value = '';
+  }
+}
+
+/** Guarda puntuaciones editadas actualmente en el textarea de vuelta al cache */
+function _syncEditsToCachee() {
+  const textarea = document.getElementById('admin-scores-input');
+  if (!textarea) return;
+  textarea.value.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+    const match = line.match(/^(.+?)\s*=\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if (!match) return;
+    const nameLower = match[1].trim().toLowerCase();
+    const entry = _allLoadedLines.find(e => e.name.toLowerCase() === nameLower);
+    if (entry) entry.line = line;
+  });
+}
+
+/** Filtra el textarea por país sin perder puntuaciones ya editadas */
+function _applyCountryFilter() {
+  const filter   = (document.getElementById('admin-country-filter')?.value || '').toLowerCase().trim();
+  const textarea = document.getElementById('admin-scores-input');
+  if (!textarea || !_allLoadedLines.length) return;
+
+  // Sincronizar ediciones actuales al cache antes de filtrar
+  _syncEditsToCachee();
+
+  const filtered = filter
+    ? _allLoadedLines.filter(e => e.country.toLowerCase().includes(filter))
+    : _allLoadedLines;
+
+  textarea.value = filtered.map(e => e.line).join('\n');
 }
 
 function _previewScores() {
@@ -386,6 +437,7 @@ function _calcUserTotal(user, PLAYERS_RAW, state) {
 
 // Cache de snapshots cargados para no hacer múltiples peticiones DB
 const _snapshotCache = {};
+let _allLoadedLines = []; // [{name, country, line}] — para filtrado por país
 
 async function _getSnapshot(jornadaId, user) {
   const key = `${jornadaId}:${user}`;
