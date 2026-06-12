@@ -264,15 +264,18 @@ function _makeCard(player, isTitular, isMe, assignment, user, PLAYERS_RAW) {
   const card       = document.createElement('div');
   card.className   = 'bench-card' + (isSelected ? ' selected-card' : '');
 
-  // Score chips — solo jornadas con puntuación para este jugador
+  // Score chips — todas las jornadas puntuadas; "Supl." si el jugador no tiene score
   const scoreChips = Object.keys(_scores)
     .map(Number)
     .sort((a, b) => a - b)
-    .filter(j => _scores[j][player.id] !== undefined)
     .map(j => {
       const pts = _scores[j][player.id];
-      const cls = pts > 0 ? 'score-chip pos' : pts < 0 ? 'score-chip neg' : 'score-chip zero';
-      return `<span class="${cls}" title="Jornada ${j}">J${j}: ${pts}</span>`;
+      if (typeof pts === 'number') {
+        const cls = pts > 0 ? 'score-chip pos' : pts < 0 ? 'score-chip neg' : 'score-chip zero';
+        return `<span class="${cls}" title="Jornada ${j}">J${j}: ${pts}</span>`;
+      } else {
+        return `<span class="score-chip supl" title="Jornada ${j} — no alineado">J${j}: Supl.</span>`;
+      }
     }).join('');
 
   card.innerHTML =
