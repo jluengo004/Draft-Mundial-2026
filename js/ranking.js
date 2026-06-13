@@ -474,11 +474,12 @@ async function _saveScores() {
   if (errors.length) { _previewScores(); return; }
   if (!results.length) return;
 
-  const jornadaData = {};
-  results.forEach(r => { jornadaData[r.player.id] = r.pts; });
-  await dbSet(`scores/${jornada}`, jornadaData);
+  // Leer lo que ya hay en DB y hacer merge (no sobreescribir)
+  const existing = (await dbGet(`scores/${jornada}`)) || {};
+  results.forEach(r => { existing[r.player.id] = r.pts; });
+  await dbSet(`scores/${jornada}`, existing);
 
-  _ctx.showToast(`✓ Jornada ${jornada} — ${results.length} jugadores guardados`, 'success');
+  _ctx.showToast(`✓ Jornada ${jornada} — ${results.length} jugadores actualizados`, 'success');
   document.getElementById('admin-scores-input').value = '';
   document.getElementById('admin-preview').innerHTML  = '';
 }
